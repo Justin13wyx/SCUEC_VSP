@@ -11,15 +11,16 @@
 			<img src="assets/top.png" id="top_logo">
 		</div>
 		<div id="navigator">
-			<p class="nav_btn selected">首页</p>
-			<p class="nav_btn">视频介绍</p>
-			<p class="nav_btn">说明阅读</p>
-			<p class="nav_btn">使用评测</p>
+			<p class="nav_btn selected" data-role="index">首页</p>
+			<p class="nav_btn" data-role="video">视频介绍</p>
+			<p class="nav_btn" data-role="instruction">说明阅读</p>
+			<p class="nav_btn" data-role="test">使用评测</p>
 		</div>
 		<div class="cutting_line"></div>
 	</header>
 	<main>
-		<section id="main">
+		<section class="view current" id="main">
+			<!-- 主页,用户可以继续同按钮的操作 -->
 			<div class="box" id="equipment_area">
 				这里可以放仪器的多角度的图片(幻灯片)
 			</div>
@@ -30,18 +31,55 @@
 					或者也可以写上一些使用须知, 安全提示等等
 				</div>
 				<div class="box" id="control_center">
-					<div class="op_btn">查看视频</div>
-					<div class="op_btn">阅读说明</div>
-					<div class="op_btn">进行测试</div>
-					<div class="op_btn">其他操作</div>
+					<div class="op_btn" data-map="1">查看视频</div>
+					<div class="op_btn" data-map="2">阅读说明</div>
+					<div class="op_btn" data-map="3">进行测试</div>
+					<div class="op_btn" data-map="0">其他操作</div>
 				</div>
 			</div>
+		</section>
+		<section class="view" id="video_area">
+			<!-- 说明视频观看, 禁止用户进行定位 -->
+			<div data-role="left" class="op_btn">前一个</div>
+			<div id="main_video">
+				<video id="video_play" src="assets/A70976AA.m4v">
+					浏览器不支持使用视频, 建议更换浏览器(Chrome)
+				</video>
+				<div id="video_control">
+					<p class="op_btn" data-role="-30">向前30s</p>
+					<p class="op_btn" data-role="+30">向后30s</p>
+					<p class="op_btn" data-role="play">播放/暂停</p>
+					<p class="op_btn" data-role="download">下载</p>
+				</div>
+			</div>
+			<div data-role="right" class="op_btn">后一个</div>
+		</section>
+		<section class="view" id="instruction_area">
+			<!-- Word展示, 考虑使用PDF.js -->
+			<div class="box" id="pdf_preview">
+				<div class="pdf">
+					<p>使用说明</p>
+				</div>
+				<div class="pdf">
+					<p>安全提示</p>
+				</div>
+			</div>
+			<div class="box" id="read_control">
+				<div class="op_btn" id="readpdf_btn">开始阅读</div>
+			</div>
+		</section>
+		<section class="view" id="test_area">
+			<!-- 测试区域 -->
 		</section>
 	</main>
 	<footer>
 		<p id="copyright">版权所有© 2016 中南民族大学 鄂ICP备05003346号 武汉市洪山区民族大道182号 邮编 430074</p>
 	</footer>
 	<div id="bg"></div>
+	<div id="mask"></div>
+	<canvas id="loading_token" width="300" height="300">
+		浏览器不支持该元素. 推荐使用Chrome.
+	</canvas>
 	<script src="main.js"></script>
 </body>
 </html>
