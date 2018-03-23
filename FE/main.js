@@ -58,6 +58,7 @@
 
 	video.onended = function () {
 		// 播放结束, 是请求下一个 还是 重新播放?
+		// TODO: 等待请求下一个接口完成
 		video_control.children[1].innerHTML = "播放"
 	}
 
@@ -82,10 +83,16 @@
 		pdf = e.target
 		if (pdf.getAttribute("class") == "pdf") {
 			for (each of pdfs.children) {
-				each.style['backgroundColor'] = "rgb(191, 220, 210)"
+				each.setAttribute("class", "pdf");
 			}
-			pdf.style['backgroundColor'] = "#aaa"
+			pdf.setAttribute("class", "pdf selected_pdf");
 			selected_pdf = pdf;
+		}
+		else {
+			for (each of pdfs.children) {
+				each.setAttribute("class", "pdf");
+			}
+			selected_pdf = null;
 		}
 	})
 
