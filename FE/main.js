@@ -17,7 +17,7 @@
 	var max_viewtime = 0;
 
 	var read_trigger = document.getElementById('readpdf_btn');
-	var pdfs = document.getElementsByClassName("pdf");
+	var pdfs = document.getElementById("pdf_preview")
 	var selected_pdf = null;
 
 	var mask = document.getElementById("mask");
@@ -74,6 +74,18 @@
 		}
 		else if (e.target.dataset['role'] == "play") {
 			toggle_play(e.target)
+		}
+	})
+
+	pdfs.addEventListener("click", e => {
+		e.preventDefault()
+		pdf = e.target
+		if (pdf.getAttribute("class") == "pdf") {
+			for (each of pdfs.children) {
+				each.style['backgroundColor'] = "rgb(191, 220, 210)"
+			}
+			pdf.style['backgroundColor'] = "#aaa"
+			selected_pdf = pdf;
 		}
 	})
 
