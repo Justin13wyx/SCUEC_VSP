@@ -10,10 +10,11 @@
 	btn2view.set("index", main_area)
 	btn2view.set("video", video_area)
 	btn2view.set("instruction", instruction_area)
-	btn2view.set("test", test_area)
+	btn2view.set("test", test_area) // data-role和目标视图的关联映射
 
-	var video_btns = document.getElementById("video_control").children;
-
+	var video = document.getElementById("video_play");
+	var video_control = document.getElementById("video_control");
+	var max_viewtime = 0;
 
 	var read_trigger = document.getElementById('readpdf_btn');
 	var pdfs = document.getElementsByClassName("pdf");
@@ -25,10 +26,10 @@
 	var loading_timer = 0;
 	var start_angle = 0;
 
-	// TODO: 如果不支持let关键字就完蛋了, 所以还是要像个办法解决闭包
-	// 
+	// TODO: 如果不支持let关键字时间绑定就会全部失效
+	// 注: 正常情况下, Win10应该没问题, 怕的是Win7啊
 	// 其实这里一种更好的解决方法是直接捕获整个nav区域的点击事件, 根据
-	// target来进行判断
+	// target来进行判断, 但我同样担心兼容性(IE8)
 	for ( let btn of nav_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
@@ -48,6 +49,34 @@
 		else btn.onclick = e => { alert("操作未定义.") }
 	}
 
+	video.ontimeupdate = function () {
+		if (max_viewtime < video.currentTime) {
+			max_viewtime = video.currentTime;
+		}
+		else return
+	}
+
+	video.onended = function () {
+		// 播放结束, 是请求下一个 还是 重新播放?
+		video_control.children[1].innerHTML = "播放"
+	}
+
+	video_control.addEventListener('click', e => {
+		e.preventDefault()
+		if (e.target.dataset['role'] == "-10") {
+			video.currentTime -= 10;
+		}
+		else if (e.target.dataset['role'] == "+10") {
+			if (video.currentTime + 1 < max_viewtime) {
+				video.currentTime += 10
+			}
+			else video.currentTime = max_viewtime
+		}
+		else if (e.target.dataset['role'] == "play") {
+			toggle_play(e.target)
+		}
+	})
+
 	read_trigger.addEventListener("click", e => {
 		if (selected_pdf) {
 			// 调用PDF.js打开一个新窗口来阅读
@@ -56,6 +85,18 @@
 			alert("你还没有选择阅读材料.");
 		}
 	})
+
+	function toggle_play(button) {
+		state = video.paused;
+		if (state) {
+			video.play();
+			button.innerHTML = "暂停"
+		}
+		else {
+			video.pause();
+			button.innerHTML = "播放"
+		}
+	}
 
 	function btn_switch(selected_btn) {
 		for ( let btn of nav_btns ) {
@@ -123,11 +164,16 @@
 		setTimeout(function () {
 			toView.style.opacity = 1;
 			curView = toView;
-		}, 400);
+		}, 400); // 总觉得这里这样不是很安全, 后期再考虑
 	}
 
+	/**
+	 * toggle加载动画和覆盖层
+	 * @param  {[type]} toggle [description]
+	 * @return {[type]}        [description]
+	 */
 	function toggle_loading(toggle) {
-		mask.style['transform'] = toggle ? "scale3d(1, 1, 1)" : "scale3d(1, 0, 1)"
+		mask.style['display'] = toggle ? "block" : "none";
 		if (toggle) {
 			canvas.style['transform'] = "scale3d(1, 1, 1)";
 			loading_timer = requestAnimationFrame(render_loading)
@@ -138,7 +184,10 @@
 		}
 	}
 
-
+	/**
+	 * 加载动画渲染函数
+	 * @return {[type]} [description]
+	 */
 	function render_loading() {
 		context.clearRect(0, 0, canvas.width, canvas.height)
 		context.strokeStyle = "rgb(49, 71, 74)"
@@ -151,7 +200,7 @@
 		context.textAlign = "center"
 		context.strokeText("加载中", canvas.width/2, canvas.height/2)
 		start_angle += 0.1
-		start_angle %= Math.PI * 2
+		start_angle %= Math.PI * 2 // 防止数值太大
 		loading_timer = requestAnimationFrame(render_loading)
 	}
 
