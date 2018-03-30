@@ -1,6 +1,7 @@
 * {
 	margin: 0;
 	padding: 0;
+	font-family: Hiragino Sans GB, Microsoft Yahei, "Arial";
 }
 
 header {
@@ -74,25 +75,54 @@ header > #navigator {
 	align-items: center;
 }
 
-#video_area > .op_btn {
-	flex: 1;
-	padding: 10px;
-	margin: 10px;
-}
-
 #video_area > #main_video {
-	flex: 5;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	align-items: center;
+	flex: 4;
+	height: 100%;
 }
 
 #video_play {
+	height: 100%;
 	width: 100%;
 }
 
 #video_control {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	justify-content: center;
 	flex-direction: row;
+	align-self: stretch;
+}
+
+#video_control > .op_btn {
+	margin: 0 9%;
+}
+
+#video_list {
+	flex: 1;
+	align-self: stretch;
+	overflow: auto;
+	background-color: rgb(200, 210, 220);
+	border-radius: 10px;
+	padding: 10px;
+}
+
+#video_list > ul {
+	list-style: none;
+}
+
+#video_list > ul > li {
+	padding: 10px 0 10px 5px;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: all 0.7s;
+}
+
+#video_list > ul > li:hover {
+	background-color: rgb(232, 233, 228);
 }
 
 #main > div {
@@ -116,12 +146,21 @@ header > #navigator {
 	margin: 7px;
 }
 
-#equiment_area {
+#equipment_area {
 	align-self: stretch;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-direction: column;
+}
+
+#equipment_area > p {
+	margin: 20px;
 }
 
 #desc_area {
-	flex: 1;
+	flex: 2;
+	overflow: scroll;
 	align-self: stretch;
 }
 
@@ -133,6 +172,12 @@ header > #navigator {
 
 #instruction_area > .box {
 	width: 100%;
+}
+
+.tag {
+	margin: 20px 10px;
+	font-weight: bold;
+	font-size: 20px;
 }
 
 #instruction_area > #pdf_preview {
@@ -153,7 +198,6 @@ header > #navigator {
 	width: 17%;
 	margin: 20px;
 	padding: 10px;
-	font-family: Hiragino Sans GB, Microsoft Yahei, "Arial";
 	font-size: 23px;
 	background-color: rgb(191, 220, 210);
 	border-radius: 0 10px 10px 0;
@@ -242,7 +286,14 @@ footer > #copyright {
 }
 
 
-
+#user_mask {
+	position: absolute;
+	top: 2%;
+	right: 5%;
+	width: 50px;
+	height: 50px;
+	background-color: #fff;
+}
 
 
 
