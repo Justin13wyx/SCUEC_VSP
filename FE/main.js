@@ -20,11 +20,14 @@
 	var pdfs = document.getElementById("pdf_preview")
 	var selected_pdf = null;
 
+	var user_mask = document.getElementById("user_mask")
+	var login_panel = document.getElementById("login_panel");
 	var mask = document.getElementById("mask");
 	var canvas = document.getElementById("loading_token");
 	var context = canvas.getContext('2d');
 	var loading_timer = 0;
 	var start_angle = 0;
+	var access = 0;
 
 	// TODO: 如果不支持let关键字时间绑定就会全部失效
 	// 注: 正常情况下, Win10应该没问题, 怕的是Win7啊
@@ -49,6 +52,11 @@
 		else btn.onclick = e => { alert("操作未定义.") }
 	}
 
+	user_mask.addEventListener("click", e => {
+		if (!access) toggle_login(1)
+		else return // 召唤出用户的个人页面
+	})
+
 	video.ontimeupdate = function () {
 		if (max_viewtime < video.currentTime) {
 			max_viewtime = video.currentTime;
@@ -57,7 +65,7 @@
 	}
 
 	video.onended = function () {
-		// 播放结束, 是请求下一个 还是 重新播放?
+		// 播放结束, 请求下一个
 		// TODO: 等待请求下一个接口完成
 		video_control.children[1].innerHTML = "播放"
 	}
@@ -172,6 +180,10 @@
 	* @param  {Function} callback      回调函数
 	*/
 	function menu_switch(e, selected_btn, toView, callback) {
+		if (!access) {
+			alert("你还没有登录");
+			return;
+		}
 		e.cancelBubble = true;
 		btn_switch(selected_btn);
 		curView.style.transform = "translate3d(-150%,0,0)";
@@ -204,6 +216,23 @@
 	}
 
 	/**
+	 * toggle加载登录注册面板和覆盖层
+	 * @param  {[type]} toggle [description]
+	 * @return {[type]}        [description]
+	 */
+	function toggle_login(toggle) {
+		mask.style['display'] = toggle ? "block" : "none";
+		if (toggle) {
+			login_panel.style['transform'] = "translate3d(0, 0, 0)"
+			mask.addEventListener("click", e => { toggle_login(0) })
+		}
+		else {
+			login_panel.style['transform'] = "translate3d(0, -150%, 0)"
+			mask.removeEventListener("click", e => { toggle_login(0) })
+		}
+	}
+
+	/**
 	 * 加载动画渲染函数
 	 * @return {[type]} [description]
 	 */
@@ -222,5 +251,7 @@
 		start_angle %= Math.PI * 2 // 防止数值太大
 		loading_timer = requestAnimationFrame(render_loading)
 	}
+
+	// console.log(PDFJS)
 
 })()

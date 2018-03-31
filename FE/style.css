@@ -282,25 +282,116 @@ footer > #copyright {
 	left: 0;
 	width: 100%;
 	height: 100%;
+	background-color: #aaa;
+	opacity: 0.7;
 	z-index: 8888;
 }
-
 
 #user_mask {
 	position: absolute;
 	top: 2%;
 	right: 5%;
-	width: 50px;
-	height: 50px;
-	background-color: #fff;
+	width: 30px;
+	height: 30px;
+	cursor: pointer;
+	background-color: transparent;
 }
 
+#login_panel {
+	position: absolute;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+	top: 50%;
+	left: 50%;
+	width: 600px;
+	height: 400px;
+	margin: -210px 0 0 -310px;
+	border-radius: 10px;
+	padding: 20px;
+	/*background-color: rgb(128, 147, 151);*/
+	/*background-color: rgb(72, 116, 117);*/
+	background-color: #fff;
+	transform: translate3d(0, -150%, 0);
+	transition: all 0.4s;
+	z-index: 9999;
+}
 
+#login_panel > #action_switch {
+	align-self: stretch;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	align-items: center;
+}
 
+#login_panel > #action_switch > p {
+	font-size: 21px;
+	padding: 0 15px;
+	margin: 0 0 20px 0;
+	color: rgb(72, 116, 117);
+	border-bottom: 1px solid rgb(181, 191, 190);
+	transition: all 0.3s;
+	cursor: pointer;
+	box-sizing: border-box;
+}
 
+.current_action, #login_panel > #action_switch > p:hover {
+	font-weight: bold;
+	padding: 0 20px;
+	border-bottom: 4px solid rgb(181, 191, 190);
+}
 
+#login_panel > input {
+	width: 70%;
+	padding: 10px;
+	border: 2px solid #eee;
+	border-radius: 10px;
+	font-size: 12px;
+	margin: 10px;
+	outline: none;
+	background: transparent;
+}
 
+#login_panel > button {
+	width: 30%;
+	height: 40px;
+	font-size: 12px;
+	border-radius: 10px;
+	cursor: pointer;
+	transition: all 0.4s;
+	margin-top: 10px;
+	border: none;
+	outline: none;
+	color: #ccc;
+	background-color: rgb(72, 116, 117);
+}
 
+#login_panel > button:hover {
+	color: #eee;
+	font-size: 15px;
+	background-color: rgb(181, 191, 190);
+}
 
+#login_panel > input::-webkit-input-placeholder {
+	color: #aaa;
+}
+
+#login_panel > input::-moz-placeholder {   /* Mozilla Firefox 19+ */
+	color: #aaa;
+}
+
+#login_panel > input:-ms-input-placeholder {  /* Internet Explorer 10-11 */ 
+	color: #aaa;
+}
+
+#greeting {
+	position: absolute;
+	top: 0;
+	left: -300%;
+	width: 100px;
+	z-index: 0;
+}
 
 

@@ -87,7 +87,22 @@
 	<div id="bg"></div>
 	<div id="mask"></div>
 	<div id="user_mask">
-		
+		<p id="greeting">请先登录!</p>
+		<svg id="icon-user" width="30px" height="30px" viewbox="0 0 28 28">
+			<path d="M14 0c7.734 0 14 6.266 14 14 0 7.688-6.234 14-14 14-7.75 0-14-6.297-14-14 0-7.734 6.266-14 14-14zM23.672 21.109c1.453-2 2.328-4.453 2.328-7.109 0-6.609-5.391-12-12-12s-12 5.391-12 12c0 2.656 0.875 5.109 2.328 7.109 0.562-2.797 1.922-5.109 4.781-5.109 1.266 1.234 2.984 2 4.891 2s3.625-0.766 4.891-2c2.859 0 4.219 2.312 4.781 5.109zM20 11c0-3.313-2.688-6-6-6s-6 2.688-6 6 2.688 6 6 6 6-2.688 6-6z"></path>
+		</svg>
+	</div>
+	<div id="login_panel">
+		<div id="action_switch">
+			<p class="current_action">注册</p>
+			<p class="">登录</p>
+		</div>
+		<input type="text" name="user_name" placeholder="用户名" autofocus>
+		<input type="text" name="user_true_name" placeholder="真实姓名">
+		<input type="email" name="email" placeholder="邮箱">
+		<input type="password" name="passwd" placeholder="密码">
+		<input type="password" name="passwd_validate" placeholder="重复输入一次密码">
+		<button>提交</button>
 	</div>
 	<canvas id="loading_token" width="300" height="300">
 		浏览器不支持该元素. 推荐使用Chrome.
