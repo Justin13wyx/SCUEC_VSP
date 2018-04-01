@@ -388,7 +388,7 @@ footer > #copyright {
 
 #greeting {
 	position: absolute;
-	top: 0;
+	top: 10%;
 	left: -300%;
 	width: 100px;
 	z-index: 0;

@@ -94,15 +94,15 @@
 	</div>
 	<div id="login_panel">
 		<div id="action_switch">
-			<p class="current_action">注册</p>
-			<p class="">登录</p>
+			<p class="current_action" data-role="register">注册</p>
+			<p class="" data-role="login">登录</p>
 		</div>
-		<input type="text" name="user_name" placeholder="用户名" autofocus>
-		<input type="text" name="user_true_name" placeholder="真实姓名">
-		<input type="email" name="email" placeholder="邮箱">
-		<input type="password" name="passwd" placeholder="密码">
-		<input type="password" name="passwd_validate" placeholder="重复输入一次密码">
-		<button>提交</button>
+		<input type="text" name="username" placeholder="用户名" autofocus class="login">
+		<input type="text" name="truename" placeholder="真实姓名" class="login_part">
+		<input type="email" name="email" placeholder="邮箱" class="login_part">
+		<input type="password" name="secret" placeholder="密码" class="login">
+		<input type="password" name="passwd_validate" placeholder="重复输入一次密码" class="login_part">
+		<button id="submit_login">提交</button>
 	</div>
 	<canvas id="loading_token" width="300" height="300">
 		浏览器不支持该元素. 推荐使用Chrome.
