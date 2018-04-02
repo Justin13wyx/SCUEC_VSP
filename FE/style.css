@@ -394,4 +394,49 @@ footer > #copyright {
 	z-index: 0;
 }
 
+#user_tooltip {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 300px;
+	height: 300px;
+	margin: -150px 0 0 -150px;
+	background-color: #eee;
+	border-radius: 20px;
+	box-shadow: 1px 1px 3px #aaa;
+	padding: 20px;
+	z-index: 9999;
+	transform: translate3d(0, -200%, 0);
+	transition: all 0.4s;
+}
+
+#user_tooltip > #tooltip_greeting {
+	font-size: 40px;
+	font-weight: bold;
+}
+
+#user_tooltip > #logout_btn {
+	position: relative;
+	bottom: 0px;
+	left: 50%;
+	height: 30px;
+	width: 100px;
+	border: none;
+	outline: none;
+	border-radius: 10px;
+	box-shadow: 1px 1px 3px #000;
+	margin: 0 0 0 -50px;
+	cursor: pointer;
+	transition: all 0.3s;
+}
+
+#user_tooltip > #logout_btn:hover {
+	background-color: #aaa;
+	color: #fff;
+}
+
+#user_tooltip > .tooltip_item {
+	padding: 10px;
+	margin: 10px;
+}
 

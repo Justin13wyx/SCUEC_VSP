@@ -28,6 +28,8 @@
 	var greeting = document.getElementById("greeting");
 	var submit_login = document.getElementById("submit_login");
 	var mask = document.getElementById("mask");
+	var logout_btn = document.getElementById("logout_btn");
+	var tooltip = document.getElementById("user_tooltip");
 	var canvas = document.getElementById("loading_token");
 	var context = canvas.getContext('2d');
 	var loading_timer = 0;
@@ -35,14 +37,14 @@
 	var access = 0;
 	var username = "";
 
-	window.onload = e => {
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/checkLogin", check_state, null)
-	}
+	// window.onload = e => {
+	// 	fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/checkLogin", check_state, null)
+	// }
 
-	function check_state(res) {
-		console.log(res)
+	// function check_state(res) {
+	// 	console.log(res)
 
-	}
+	// }
 
 	// TODO: 如果不支持let关键字时间绑定就会全部失效
 	// 注: 正常情况下, Win10应该没问题, 怕的是Win7啊
@@ -81,12 +83,14 @@
 
 	user_mask.addEventListener("click", e => {
 		if (!access) toggle_login(1)
-		else logout() // 登录之后改为登出
+		else toggle_tooltip(1) // 登录之后改为呼出用户信息
 	})
 
 	submit_login.addEventListener("click", e => {
 		do_login_or_register()
 	})
+
+	logout_btn.addEventListener("click", e => { logout() })
 
 	video.ontimeupdate = function () {
 		if (max_viewtime < video.currentTime) {
@@ -156,12 +160,23 @@
 		}
 	}
 
+	/**
+	 * 用于注册和登录输入框的切换, 事实上他们共用输入框
+	 * @param  {[type]} role [description]
+	 * @return {[type]}      [description]
+	 */
 	function panel_switch(role) {
+		clear_login()
 		for ( let part of login_part ) {
 			part.style["display"] = role == "login" ? "none" : "block"
 		}
 	}
 
+	/**
+	 * 按钮样式切换
+	 * @param  {[type]} selected_btn [description]
+	 * @return {[type]}              [description]
+	 */
 	function btn_switch(selected_btn) {
 		for ( let btn of nav_btns ) {
 			btn.setAttribute("class", "nav_btn");
@@ -209,6 +224,13 @@
 		};
 	}
 
+	/**
+	 * 执行登录或者注册操作, 由当前显示的输入信息决定执行哪一个操作
+	 * 都会先进行各自的填充本地验证, 接着组装信息 将他们发送
+	 * TODO: 这里没有做特殊字符的安全性验证
+	 * @param  {[type]} abs_login [description]
+	 * @return {[type]}           [description]
+	 */
 	function do_login_or_register(abs_login) {
 		role = abs_login || document.getElementsByClassName("current_action")[0].getAttribute("data-role")
 		form = new Map()
@@ -251,6 +273,11 @@
 		}
 	}
 
+	/**
+	 * 检查注册状态函数
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function check_register_state(res) {
 		if (res['code'] == '0') {
 			// 注册成功
@@ -263,11 +290,17 @@
 		toggle_login(0)
 	}
 
+	/**
+	 * 检查登录状态函数
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function check_login_state(res) {
 		if (res['code'] == '0') {
 			// 登陆成功
 			username = res['username']
 			greeting.innerHTML = "欢迎," + res['username']
+			tooltip.children[0].innerHTML = "你好," + res['username']
 			access = 1
 			toggle_login(0)
 		}
@@ -285,6 +318,11 @@
 		}
 	}
 
+	/**
+	 * 验证登出状态函数
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function check_logout_state(res) {
 		if (res['code'] == "0") {
 			greeting.innerHTML = "请先登录!"
@@ -296,13 +334,21 @@
 		}
 	}
 
+	/**
+	 * 登出操作
+	 * @return {[type]} [description]
+	 */
 	function logout() {
-		data = "username=" + username
-		fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogout", check_logout_state, data)
+		if (confirm("确定登出?")) {
+			data = "username=" + username
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogout", check_logout_state, data)
+			toggle_tooltip(0)
+		}
+		return;
 	}
 
 	/**
-	 * FormData转换函数, 返回字符串
+	 * Map转换函数, 返回字符串
 	 * @param  {[type]} form [description]
 	 * @return {[type]}      [description]
 	 */
@@ -368,7 +414,6 @@
 	 * @return {[type]}        [description]
 	 */
 	function toggle_login(toggle) {
-		mask.style['display'] = toggle ? "block" : "none";
 		if (toggle) {
 			login_panel.style['transform'] = "translate3d(0, 0, 0)"
 			mask.addEventListener("click", e => { toggle_login(0) })
@@ -377,13 +422,45 @@
 			login_panel.style['transform'] = "translate3d(0, -150%, 0)"
 			mask.removeEventListener("click", e => { toggle_login(0) })
 		}
+		mask.style['display'] = toggle ? "block" : "none";
 		clear_login()
 	}
 
+	/**
+	 * 清空输入框
+	 * @return {[type]} [description]
+	 */
 	function clear_login() {
 		for ( let i = 1; i < login_panel.childElementCount - 1; i++) {
 			login_panel.children[i].value = ""
 		}
+	}
+
+	/**
+	 * toggle用户个人信息的函数
+	 * @param  {[type]} toggle [description]
+	 * @return {[type]}        [description]
+	 */
+	function toggle_tooltip(toggle) {
+		mask.style['display'] = toggle ? "block" : "none";
+		if (toggle) {
+			fetch_data("GET", "", fill_user_info)
+			tooltip.style['transform'] = "translate3d(0, 0, 0)"
+			mask.addEventListener("click", e => { toggle_tooltip(0) })
+		}
+		else {
+			tooltip.style['transform'] = "translate3d(0, -200%, 0)"
+			mask.removeEventListener("click", e => { toggle_tooltip(0) })
+		}
+	}
+
+	/**
+	 * 用户登录之后填充tooltip信息
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
+	function fill_user_info(res) {
+
 	}
 
 	/**
