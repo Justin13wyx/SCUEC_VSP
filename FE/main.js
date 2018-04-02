@@ -35,6 +35,15 @@
 	var access = 0;
 	var username = "";
 
+	window.onload = e => {
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/checkLogin", check_state, null)
+	}
+
+	function check_state(res) {
+		console.log(res)
+
+	}
+
 	// TODO: 如果不支持let关键字时间绑定就会全部失效
 	// 注: 正常情况下, Win10应该没问题, 怕的是Win7啊
 	// 其实这里一种更好的解决方法是直接捕获整个nav区域的点击事件, 根据
@@ -75,7 +84,9 @@
 		else logout() // 登录之后改为登出
 	})
 
-	submit_login.onclick = do_login_or_register
+	submit_login.addEventListener("click", e => {
+		do_login_or_register()
+	})
 
 	video.ontimeupdate = function () {
 		if (max_viewtime < video.currentTime) {
@@ -168,7 +179,7 @@
 	function fetch_data(method, url, callback, data) {
 		var xhr = new XMLHttpRequest();
 		xhr.open(method, url);
-		xhr.timeout = 3000;
+		xhr.timeout = 9000;
 		if (method === "POST") {
 			xhr.setRequestHeader("Content-Type", 'application/x-www-form-urlencoded');
 		}
@@ -200,7 +211,7 @@
 
 	function do_login_or_register(abs_login) {
 		role = abs_login || document.getElementsByClassName("current_action")[0].getAttribute("data-role")
-		form = new FormData()
+		form = new Map()
 		if (role == 'register') {
 			// 填充验证
 			for ( let i = 1; i < login_panel.childElementCount - 1; i++) {
