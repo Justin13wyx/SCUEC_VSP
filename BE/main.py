@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, make_response, session
+from flask import Flask, request, jsonify, make_response, session, redirect, url_for
 import db_connector
 
 app = Flask(__name__)
@@ -25,6 +25,11 @@ prefix = "/apiv1/{}/{}"
 # ###############
 
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+
+
+@app.route("/")
+def index():
+    return redirect("http://127.0.0.1:8080/%E5%AE%9E%E9%AA%8C%E5%AE%A4%E9%A1%B9%E7%9B%AE/FE/")
 
 
 @app.route(prefix.format("user", "doSignin"), methods=["POST"])
@@ -66,12 +71,21 @@ def login():
     if true_secret == secret:  # 密码匹配, 登陆成功
         session['username'] = username
         res = pack_response(0, "ok", username=username, root=user_id[1])
+        res.set_cookie("uid", value=username, max_age=10086)
         return res
     else:
         return pack_response(1, "wrong password")
 
 
-# TODO: 增加一个是否登录的探查接口
+# @app.route(prefix.format("user", "checkLogin"), methods=["GET"])
+# def check_login_state():
+#     if 'session' not in request.cookies:
+#         return pack_response(5, "haven't login")
+#     if request.cookies['session'] in session:
+#         return pack_response(0, "ok", username=session['username'])
+#     else:
+#         return pack_response(5, "haven't login")
+
 
 @app.route(prefix.format("user", "doLogout"), methods=["POST"])
 def logout():
@@ -119,5 +133,5 @@ def pack_response(status_code, msg, **kwargs):
 if __name__ == "__main__":
     try:
         app.run(debug=True)
-    except Exception:
-        pass
+    except Exception as e:
+        print(e)
