@@ -41,13 +41,18 @@ def register():
     result = db_connector.set_attr("user_info", tuple(info_keys[:-1]), tuple(info_values[:-1]))  # 设置用户信息
     if result:
         # 用户信息设置成功, 设置密码记录
-        result = db_connector.set_attr("secret", (info_keys[-1],), (db_connector.hash_passwd(info_values[-1]),))
+        result = db_connector.set_attr("secret", ("username", info_keys[-1],), (user_info['username'], db_connector.hash_passwd(info_values[-1]),))
+    if result:
+        # 初始化用户状态
+        result = db_connector.set_attr("user_state", ("username", ), (user_info['username'], ))
     if result:
         # 设置都成功, 注册成功
         return pack_response(0, "ok")
     else:
-        # 密码写入失败, 删除用户信息记录, 注册失败
+        # 写入失败, 删除用户信息记录, 注册失败
         db_connector.remove_attr("user_info", "username", user_info['username'])
+        db_connector.remove_attr("secret", "username", user_info['username'])
+        db_connector.remove_attr("user_state", "username", user_info['username'])
         return pack_response(-1, "database written failed!")
 
 
@@ -57,7 +62,7 @@ def login():
     username = login_info['username']
     # 哈希传过来的密码
     secret = db_connector.hash_passwd(login_info['secret'])
-    user_id = db_connector.fetch_data("user_info", "username", username, ("id", "isroot", "isactived",)).fetchone()
+    user_id = db_connector.fetch_data("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
     if username in session: # 如果在会话中, 直接确认
         return pack_response(0, "ok", username=username, root=user_id[1])
     # 数据库尝试抓取用户ID
@@ -93,9 +98,13 @@ def logout():
     return pack_response(0, "ok")
 
 
-@app.route(prefix.format("index", "fetchInfo"), methods=["GET"])
+@app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
-    pass  # 具体机器, 暂时不考虑了, 信息固定
+    username = request.values.get("username")
+    truename = db_connector.fetch_data("user_info", "username", username, ("truename", )).fetchall()[0][0]
+    result_set = db_connector.fetch_data("user_state", "username", username, ("videopass", "instructionpass", "score", "havetest",)).fetchall()
+    requirement = db_connector.fetch_data("machine_requirement", "id", 1, ("videorequire", "instructionrequire", "scorerequire")).fetchall()
+    return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
 
 
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])
