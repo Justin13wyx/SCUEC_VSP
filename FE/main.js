@@ -82,6 +82,8 @@
 	}
 
 	user_mask.addEventListener("click", e => {
+		e.cancelBubble = true;
+		e.preventDefault()
 		if (!access) toggle_login(1)
 		else toggle_tooltip(1) // 登录之后改为呼出用户信息
 	})
@@ -300,7 +302,6 @@
 			// 登陆成功
 			username = res['username']
 			greeting.innerHTML = "欢迎," + res['username']
-			tooltip.children[0].innerHTML = "你好," + res['username']
 			access = 1
 			toggle_login(0)
 		}
@@ -397,8 +398,8 @@
 	 * @return {[type]}        [description]
 	 */
 	function toggle_loading(toggle) {
-		mask.style['display'] = toggle ? "block" : "none";
-		if (toggle) {
+		mask.style['display'] = toggle == "1" ? "block" : "none";
+		if (toggle == "1") {
 			canvas.style['transform'] = "scale3d(1, 1, 1)";
 			loading_timer = requestAnimationFrame(render_loading)
 		}
@@ -414,15 +415,15 @@
 	 * @return {[type]}        [description]
 	 */
 	function toggle_login(toggle) {
-		if (toggle) {
+		mask.style['display'] = toggle == "1" ? "block" : "none";
+		if (toggle == "1") {
 			login_panel.style['transform'] = "translate3d(0, 0, 0)"
-			mask.addEventListener("click", e => { toggle_login(0) })
+			mask.addEventListener("click", toggle_login)
 		}
 		else {
 			login_panel.style['transform'] = "translate3d(0, -150%, 0)"
-			mask.removeEventListener("click", e => { toggle_login(0) })
+			mask.removeEventListener("click", toggle_login)
 		}
-		mask.style['display'] = toggle ? "block" : "none";
 		clear_login()
 	}
 
@@ -442,25 +443,37 @@
 	 * @return {[type]}        [description]
 	 */
 	function toggle_tooltip(toggle) {
-		mask.style['display'] = toggle ? "block" : "none";
-		if (toggle) {
-			fetch_data("GET", "", fill_user_info)
+		if (toggle == "1") {
+			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null)
 			tooltip.style['transform'] = "translate3d(0, 0, 0)"
-			mask.addEventListener("click", e => { toggle_tooltip(0) })
+			// 由于这里需要调用toggle_loading 会导致mask消失
+			// 所以需要在后面调用
+			mask.addEventListener("click", toggle_tooltip)
 		}
 		else {
 			tooltip.style['transform'] = "translate3d(0, -200%, 0)"
-			mask.removeEventListener("click", e => { toggle_tooltip(0) })
+			mask.removeEventListener("click", toggle_tooltip)
+			mask.style['display'] = "none"
 		}
 	}
 
+	var items = document.getElementsByClassName("tooltip_item")
 	/**
 	 * 用户登录之后填充tooltip信息
 	 * @param  {[type]} res [description]
 	 * @return {[type]}     [description]
 	 */
 	function fill_user_info(res) {
-
+		mask.style['display'] = "block"
+		tooltip.children[0].innerHTML = "你好," + res['truename']
+		for (let i = 0; i < items.length; i ++) {
+			items[i].innerHTML = items[i].innerHTML.replace("0/0", 
+					res.userstate[i] + "/" + res.requirement[i]
+				)
+		}
+		if (res.userstate[3] == "0") {
+			items[2].innerHTML = '<p class="tooltip_item"><span class="tip_item">测评成绩:</span>还未参加测评</p>'
+		}
 	}
 
 	/**
