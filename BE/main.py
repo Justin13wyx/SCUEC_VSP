@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, session, redirect, send_file
 import db_connector
 
 import os
+from urllib.parse import unquote
 
 app = Flask(__name__)
 path = os.path
@@ -113,6 +114,16 @@ def after_watching():
     return pack_response(-1, "database error")
 
 
+@app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
+def after_opening():
+    user = request.form['username']
+    passed = int(request.form['instruction_pass'])
+    if db_connector.update_attr("user_state", "username", user, instructionpass=passed):
+        ins_require = db_connector.fetch_data("machine_requirement", "id", 1, ("instructionrequire",)).fetchall()[0]
+        return pack_response(0, "ok", finished=passed >= ins_require[0])
+    return pack_response(-1, "database error")
+
+
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])
 def push_video_index():
     videos = os.listdir(path.join(BASEPATH, "video", "0"))
@@ -130,7 +141,20 @@ def push_video(machine_id, video_name):
 
 @app.route(prefix.format("instruction", "getInstructionIndex"), methods=["GET"])
 def push_instruction_index():
-    pass
+    pdfs = os.listdir(path.join(BASEPATH, "instructions", "0"))
+    res = []
+    for pdf in pdfs:
+        res.append([pdf, path.join("instructions", "0", pdf)])
+    return pack_response(0, "ok", data=res)
+
+
+@app.route("/instructions/<int:machine_id>/<string:instruction>")
+def push_instruction(machine_id, instruction):
+    instruction_path = path.join(BASEPATH, "instructions", str(machine_id), instruction)
+    res = send_file(instruction_path, as_attachment=False, mimetype="application/pdf")
+    res.headers["Content-Disposition"] = "inline"
+    res.headers['Access-Control-Allow-Origin'] = "*"
+    return res
 
 
 @app.route(prefix.format("test", "getQuestions"), methods=['GET'])

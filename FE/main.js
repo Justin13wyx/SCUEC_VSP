@@ -173,7 +173,7 @@
 				each.setAttribute("class", "pdf");
 			}
 			pdf.setAttribute("class", "pdf selected_pdf");
-			selected_pdf = pdf;
+			selected_pdf = pdf.getAttribute("link");
 		}
 		else {
 			for (each of pdfs.children) {
@@ -186,6 +186,7 @@
 	read_trigger.addEventListener("click", e => {
 		if (selected_pdf) {
 			// 调用PDF.js打开一个新窗口来阅读
+			window.open("http://127.0.0.1:5000/" + selected_pdf)
 		}
 		else {
 			alert("你还没有选择阅读材料.");
@@ -240,6 +241,11 @@
 		tokens[haveseen].parentElement.click()
 	}
 
+	/**
+	 * 观看完成视频的回调, 检测用户是否已经完成观看任务
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function checkfinished(res) {
 		if (res['code'] == '0') {
 			for (let i = 0; i < max_view; i ++) {
@@ -254,6 +260,11 @@
 		}
 	}
 
+	/**
+	 * 确保用户只可以按照顺序进行观看, 这个处理逻辑是和统计功能挂钩的
+	 * @param  {[type]} target [description]
+	 * @return {[type]}        [description]
+	 */
 	function checkplaying(target) {
 		iter_nodes = video_list.children[0].children;
 		for ( let i = 0; i < iter_nodes.length; i++ ) {
@@ -274,8 +285,14 @@
 		fetch_data("GET", "http://127.0.0.1:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction)
 	}
 
-	function _fetch_instruction() {
-
+	function _fetch_instruction(res) {
+		html = ""
+		for ( let i = 0; i < res['data'].length; i ++ ) {
+			html += `<div class="pdf" link="${res['data'][i][1]}">
+						<p>${res['data'][i][0].split(".")[0]}</p>
+					</div>`
+		}
+		pdfs.innerHTML = html
 	}
 
 	/**
@@ -346,7 +363,7 @@
 		xhr.ontimeout = function (e) {
 			toggle_loading(0)
 			alert("错误(000T)! 请求超时,请检查网络连接.");
-			//TODO: 作进一步处理
+			if (error_callback) error_callback(xhr);
 		};
 		xhr.onerror = function (e) {
 			toggle_loading(0)
@@ -476,6 +493,7 @@
 			access = 0;
 			max_view = 0;
 			max_viewtime = 0;
+			selected_pdf = null;
 		}
 		else {
 			alert("登出失败! 请稍后尝试.")
