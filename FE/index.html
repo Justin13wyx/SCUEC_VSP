@@ -12,10 +12,10 @@
 			<img src="assets/top.png" id="top_logo">
 		</div>
 		<div id="navigator">
-			<p class="nav_btn selected" data-role="index">首页</p>
-			<p class="nav_btn" data-role="video">视频介绍</p>
-			<p class="nav_btn" data-role="instruction">说明阅读</p>
-			<p class="nav_btn" data-role="test">使用评测</p>
+			<p class="nav_btn selected" data-role="index" data-callback="fetch_info">首页</p>
+			<p class="nav_btn" data-role="video" data-callback="fetch_video">视频介绍</p>
+			<p class="nav_btn" data-role="instruction" data-callback="fetch_instruction">说明阅读</p>
+			<p class="nav_btn" data-role="test" data-callback="fetch_questions">使用评测</p>
 		</div>
 		<div class="cutting_line"></div>
 	</header>
@@ -43,7 +43,8 @@
 		<section class="view" id="video_area">
 			<!-- 说明视频观看, 禁止用户进行定位 -->
 			<div id="main_video">
-				<video id="video_play" src="http://59.68.29.126/A70976AA.m4v">
+				<video id="video_play" muted>
+					<source src="" type="video/mp4">
 					浏览器不支持使用视频, 建议更换浏览器(Chrome)
 				</video>
 				<div id="video_control">
@@ -53,12 +54,7 @@
 				</div>
 			</div>
 			<div id="video_list">
-				<ul>
-					<li><span>○</span>第一个视频</li>
-					<li><span>○</span>第二个视频</li>
-					<li><span>○</span>第三个视频</li>
-					<li><span>○</span>第四个视频</li>
-				</ul>
+				<ul></ul>
 			</div>
 		</section>
 		<section class="view" id="instruction_area">

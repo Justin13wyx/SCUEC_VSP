@@ -6,14 +6,24 @@
 	var test_area = document.getElementById("test_area");
 	var op_btns = document.getElementById('control_center').children
 	var curView = document.getElementsByClassName("current")[0];
+
 	var btn2view = new Map()
 	btn2view.set("index", main_area)
 	btn2view.set("video", video_area)
 	btn2view.set("instruction", instruction_area)
 	btn2view.set("test", test_area) // data-role和目标视图的关联映射
+	var btn2func = new Map()
+	btn2func.set("fetch_info", fetch_info)
+	btn2func.set("fetch_video", fetch_video)
+	btn2func.set("fetch_instruction", fetch_instruction)
+	btn2func.set("fetch_questions", fetch_questions) // data-func和目标回调函数引用的关联映射
+
 
 	var video = document.getElementById("video_play");
+	var video_list = document.getElementById("video_list")
 	var video_control = document.getElementById("video_control");
+	var tokens = null;
+	var max_view = 0;
 	var max_viewtime = 0;
 
 	var read_trigger = document.getElementById('readpdf_btn');
@@ -30,10 +40,12 @@
 	var mask = document.getElementById("mask");
 	var logout_btn = document.getElementById("logout_btn");
 	var tooltip = document.getElementById("user_tooltip");
+
 	var canvas = document.getElementById("loading_token");
 	var context = canvas.getContext('2d');
 	var loading_timer = 0;
 	var start_angle = 0;
+
 	var access = 0;
 	var username = "";
 
@@ -46,6 +58,7 @@
 
 	// }
 
+	// 导航栏的按钮切换view的事件绑定
 	// TODO: 如果不支持let关键字时间绑定就会全部失效
 	// 注: 正常情况下, Win10应该没问题, 怕的是Win7啊
 	// 其实这里一种更好的解决方法是直接捕获整个nav区域的点击事件, 根据
@@ -53,10 +66,11 @@
 	for ( let btn of nav_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
-			menu_switch(e, btn, btn2view.get(btn.getAttribute("data-role")))
+			menu_switch(e, btn, btn2view.get(btn.getAttribute("data-role")), btn2func.get(btn.getAttribute("data-callback")))
 		})
 	}
 
+	// 和上面导航栏切换一样的绑定, 只不过是建立了点击映射
 	for ( let btn of op_btns ) {
 		// 这里直接将操作区的按钮和上面的导航按钮建立联系
 		let index = btn.getAttribute("data-map");
@@ -69,6 +83,7 @@
 		else btn.onclick = e => { alert("操作未定义.") }
 	}
 
+	// 登录和注册的面板切换的事件绑定
 	for ( let btn of action_switch.children ) {
 		let role = btn.getAttribute("data-role");
 		btn.addEventListener("click", e => {
@@ -81,6 +96,7 @@
 		})
 	}
 
+	// 用户头像点击的事件绑定, 根据是否授权分成呼出登录面板和个人信息两种
 	user_mask.addEventListener("click", e => {
 		e.cancelBubble = true;
 		e.preventDefault()
@@ -88,12 +104,15 @@
 		else toggle_tooltip(1) // 登录之后改为呼出用户信息
 	})
 
+	// 登录和注册的提交事件绑定
 	submit_login.addEventListener("click", e => {
+		// 做提交操作
 		do_login_or_register()
 	})
 
 	logout_btn.addEventListener("click", e => { logout() })
 
+	// 防止过度后移, 记录当前观看的最大位置
 	video.ontimeupdate = function () {
 		if (max_viewtime < video.currentTime) {
 			max_viewtime = video.currentTime;
@@ -101,10 +120,33 @@
 		else return
 	}
 
+	video_list.addEventListener("click", e => {
+		if ( e.target.hasAttribute("link") ) {
+			// 检查是否跳跃观看了
+			if (checkplaying(e.target)) {
+				max_viewtime = 0
+				video.children[0].setAttribute("src", e.target.getAttribute("link"))
+				video.load()
+				for ( node of video_list.children[0].children) {
+					node.removeAttribute("class")
+				}
+				e.target.setAttribute("class", "playing")
+			}
+			else
+				alert("请按照顺序观看")
+		}
+	})
+
 	video.onended = function () {
-		// 播放结束, 请求下一个
-		// TODO: 等待请求下一个接口完成
 		video_control.children[1].innerHTML = "播放"
+		max_viewtime = 0
+		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○")
+			max_view += 1
+		// 告诉服务端, 用户看完了
+		fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}`)
+		// 自动获取下一个的视频
+		video_list.children[0].children[max_view].click()
+		video.play()
 	}
 
 	video_control.addEventListener('click', e => {
@@ -150,6 +192,101 @@
 		}
 	})
 
+	/**
+	 * 主页的机器信息和介绍抓取
+	 * @return {[type]} [description]
+	 */
+	function fetch_info() {
+		// fetch_data("GET", "http://127.0.0.1:5000/apiv1/")
+		// 暂时不考虑
+	}
+
+	/**
+	 * 视频列表抓取和对应的地址
+	 * @return {[type]} [description]
+	 */
+	function fetch_video() {
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/video/getVideoIndex", _fetch_video)
+	}
+
+	/**
+	 * 渲染视频列表, 并进一步的抓取用户当前已经看到的, 并修改列表
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
+	function _fetch_video(res) {
+		videos = res['data']
+		html = "<ul>"
+		for (let video of videos) {
+			html += `<li class="" link=http://127.0.0.1:5000/${video[1]}><span class="seen_token">○</span>${video[0]}</li>`
+		}
+		html += "</ul>"
+		video_list.innerHTML = html
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username=" + escape(username), highlight_videolist)
+	}
+
+	/**
+	 * _fetch_video中的回调函数, 修改列表完成情况并且自动将当前该观看的视频模拟点击
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
+	function highlight_videolist(res) {
+		haveseen = res.userstate[0]
+		max_view = haveseen
+		tokens = document.getElementsByClassName("seen_token")
+		for (let i = 0; i < haveseen; i ++) {
+			tokens[i].innerHTML = "√"
+		}
+		tokens[haveseen].parentElement.click()
+	}
+
+	function checkfinished(res) {
+		if (res['code'] == '0') {
+			for (let i = 0; i < max_view; i ++) {
+				tokens[i].innerHTML = "√"
+			}
+			if ( res['finished'] )
+				alert("你已经完成视频观看要求!")
+		}
+		else {
+			max_view --;
+			alert("远端数据库更新失败!")
+		}
+	}
+
+	function checkplaying(target) {
+		if ( target.children[0].innerHTML == "√" ) {
+			return true
+		}
+		// TODO: 暂时想不到好方法了, 待会再想吧
+		return true
+	}
+
+	/**
+	 * 说明材料列表抓取和对应的地址
+	 * @return {[type]} [description]
+	 */
+	function fetch_instruction() {
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction)
+	}
+
+	function _fetch_instruction() {
+
+	}
+
+	/**
+	 * 测评题目获取
+	 * @return {[type]} [description]
+	 */
+	function fetch_questions() {
+
+	}
+
+	/**
+	 * 视频播放和暂停的切换函数
+	 * @param  {[type]} button [description]
+	 * @return {[type]}        [description]
+	 */
 	function toggle_play(button) {
 		state = video.paused;
 		if (state) {
@@ -194,6 +331,7 @@
 	* @param  {[type]}   data     POST的数据--类型:对象
 	*/
 	function fetch_data(method, url, callback, data) {
+		toggle_loading(1)
 		var xhr = new XMLHttpRequest();
 		xhr.open(method, url);
 		xhr.timeout = 9000;
@@ -201,7 +339,6 @@
 			xhr.setRequestHeader("Content-Type", 'application/x-www-form-urlencoded');
 		}
 		xhr.send(data);
-		toggle_loading(1)
 		xhr.ontimeout = function (e) {
 			toggle_loading(0)
 			alert("错误(000T)! 请求超时,请检查网络连接.");
@@ -308,14 +445,17 @@
 		if (res['code'] == '1') {
 			// 密码错误
 			alert("登录失败! 密码错误!")
+			mask.style['display'] = "block"
 		}
 		if (res['code'] == '2') {
 			// 用户不存在
 			alert("登录失败! 用户不存在!")
+			mask.style['display'] = "block"
 		}
 		if (res['code'] == '3') {
 			// 用户账户被冻结
 			alert("登录失败! 用户账户被冻结, 请联系管理员激活!")
+			mask.style['display'] = "block"
 		}
 	}
 
@@ -328,10 +468,14 @@
 		if (res['code'] == "0") {
 			greeting.innerHTML = "请先登录!"
 			alert("登出成功!")
-			access = 0
+			access = 0;
+			max_view = 0;
+			max_viewtime = 0;
 		}
 		else {
 			alert("登出失败! 请稍后尝试.")
+			max_view = 0;
+			max_viewtime = 0;
 		}
 	}
 
@@ -344,6 +488,7 @@
 			data = "username=" + username
 			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogout", check_logout_state, data)
 			toggle_tooltip(0)
+			nav_btns[0].click()
 		}
 		return;
 	}

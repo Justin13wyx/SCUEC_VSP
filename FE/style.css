@@ -121,7 +121,7 @@ header > #navigator {
 	transition: all 0.7s;
 }
 
-#video_list > ul > li:hover {
+.playing, #video_list > ul > li:hover {
 	background-color: rgb(232, 233, 228);
 }
 
