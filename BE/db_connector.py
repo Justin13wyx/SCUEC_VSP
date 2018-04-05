@@ -14,6 +14,7 @@ cursor = conn.cursor()
 fetch_sql = "SELECT {} FROM {} WHERE {}"
 set_sql = "INSERT INTO {} {} VALUES {}"
 del_sql = "DELETE FROM {} WHERE {}"
+update_sql = "UPDATE {} SET {} WHERE {}"
 
 
 def fetch_data(table, keyword, value, fields):
@@ -44,6 +45,21 @@ def remove_attr(table, keyword, value):
     sql = del_sql.format(table, condition)
     cursor.execute(sql)
     conn.commit()
+
+
+def update_attr(table, keyword, value, **kwargs):
+    condition = "{}='{}'".format(keyword, value)
+    values = []
+    for k, v in kwargs.items():
+        values.append("{}={}".format(k, v))
+    sql = update_sql.format(table, ", ".join(values), condition)
+    try:
+        cursor.execute(sql)
+        conn.commit()
+    except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
+        print(e)
+        return False
+    return True
 
 
 def trim_comma(field):

@@ -1,18 +1,14 @@
-from flask import Flask, request, jsonify, make_response, session, redirect, url_for
+from flask import Flask, request, jsonify, session, redirect, send_file
 import db_connector
 
+import os
+
 app = Flask(__name__)
+path = os.path
 prefix = "/apiv1/{}/{}"
 
-# ############
-# 登录接口
-# 注册接口
-# 信息返回接口
-# 视频列表抓取, 视频地址
-# 说明文档列表抓取, 文档地址
-# 测评信息抓取
-# 测评答案上传
-# 
+BASEPATH = "."
+
 # ###############
 # 为管理员设计的接口
 # ###############
@@ -107,9 +103,29 @@ def push_info():
     return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
 
 
+@app.route(prefix.format("user", "updateVideoIndex"), methods=["POST"])
+def after_watching():
+    user = request.form['username']
+    passed = int(request.form['video_pass'])
+    if db_connector.update_attr("user_state", "username", user, videopass=passed):
+        video_require = db_connector.fetch_data("machine_requirement", "id", 1, ("videorequire",)).fetchall()[0]
+        return pack_response(0, "ok", finished=passed >= video_require[0])
+    return pack_response(-1, "database error")
+
+
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])
 def push_video_index():
-    pass
+    videos = os.listdir(path.join(BASEPATH, "video", "0"))
+    res = []
+    for video in videos:
+        res.append([video, path.join("video", "0", video)])
+    return pack_response(0, "ok", data=res)
+
+
+@app.route("/video/<int:machine_id>/<string:video_name>")
+def push_video(machine_id, video_name):
+    video_path = path.join(BASEPATH, "video", str(machine_id), video_name)
+    return send_file(video_path, mimetype="video/mp4")
 
 
 @app.route(prefix.format("instruction", "getInstructionIndex"), methods=["GET"])
