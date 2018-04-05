@@ -255,11 +255,15 @@
 	}
 
 	function checkplaying(target) {
-		if ( target.children[0].innerHTML == "√" ) {
-			return true
+		iter_nodes = video_list.children[0].children;
+		for ( let i = 0; i < iter_nodes.length; i++ ) {
+			if ( target == iter_nodes[i] ) {
+				if ( iter_nodes[i-1].children[0].innerHTML == "√" ) {
+					return true
+				}
+				else return false
+			}
 		}
-		// TODO: 暂时想不到好方法了, 待会再想吧
-		return true
 	}
 
 	/**
@@ -330,7 +334,7 @@
 	* @param  {Function} callback 收到请求的回调函数
 	* @param  {[type]}   data     POST的数据--类型:对象
 	*/
-	function fetch_data(method, url, callback, data) {
+	function fetch_data(method, url, callback, data, error_callback) {
 		toggle_loading(1)
 		var xhr = new XMLHttpRequest();
 		xhr.open(method, url);
@@ -348,6 +352,7 @@
 			toggle_loading(0)
 			alert("出现错误(000U)! 技术人员请参考控制台输出.")
 			console.log(xhr.status + "<->" + xhr.statusText);
+			if (error_callback) error_callback(xhr);
 		};
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4 && xhr.status == 200) {
@@ -589,7 +594,7 @@
 	 */
 	function toggle_tooltip(toggle) {
 		if (toggle == "1") {
-			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null)
+			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null, toggle_tooltip)
 			tooltip.style['transform'] = "translate3d(0, 0, 0)"
 			// 由于这里需要调用toggle_loading 会导致mask消失
 			// 所以需要在后面调用
