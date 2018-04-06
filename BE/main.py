@@ -35,13 +35,20 @@ def register():
     # 尝试写入数据库
     info_keys = list(user_info.keys())
     info_values = list(user_info.values())
-    result = db_connector.set_attr("user_info", tuple(info_keys[:-1]), tuple(info_values[:-1]))  # 设置用户信息
+    try:
+        result = db_connector.set_attr("user_info", tuple(info_keys[:-1]), tuple(info_values[:-1]))  # 设置用户信息
+    except db_connector.IntegrityError as error:
+        if "UNIQUE" in error and "username" in error:
+            return pack_response(-4, "duplicate username")
+        return pack_response(-1, "database written failed!")
     if result:
         # 用户信息设置成功, 设置密码记录
         result = db_connector.set_attr("secret", ("username", info_keys[-1],), (user_info['username'], db_connector.hash_passwd(info_values[-1]),))
     if result:
         # 初始化用户状态
         result = db_connector.set_attr("user_state", ("username", ), (user_info['username'], ))
+    if result:
+        result = db_connector.set_attr("instruction_record", ("username", "haveread", ), (user_info['username'], "", ))
     if result:
         # 设置都成功, 注册成功
         return pack_response(0, "ok")
@@ -50,6 +57,7 @@ def register():
         db_connector.remove_attr("user_info", "username", user_info['username'])
         db_connector.remove_attr("secret", "username", user_info['username'])
         db_connector.remove_attr("user_state", "username", user_info['username'])
+        db_connector.remove_attr("instruction_record", "username", user_info['username'])
         return pack_response(-1, "database written failed!")
 
 
@@ -59,7 +67,7 @@ def login():
     username = login_info['username']
     # 哈希传过来的密码
     secret = db_connector.hash_passwd(login_info['secret'])
-    user_id = db_connector.fetch_data("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
+    user_id = db_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
     if username in session: # 如果在会话中, 直接确认
         return pack_response(0, "ok", username=username, root=user_id[1])
     # 数据库尝试抓取用户ID
@@ -69,7 +77,7 @@ def login():
     if user_id[2] == "0":  # 用户被冻结
         return pack_response(3, "user is deactived")
     # 获取该用户的密码
-    true_secret = db_connector.fetch_data("secret", "id", user_id[0], ("secret",)).fetchone()[0]
+    true_secret = db_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
     if true_secret == secret:  # 密码匹配, 登陆成功
         session['username'] = username
         res = pack_response(0, "ok", username=username, root=user_id[1])
@@ -98,9 +106,9 @@ def logout():
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
     username = request.values.get("username")
-    truename = db_connector.fetch_data("user_info", "username", username, ("truename", )).fetchall()[0][0]
-    result_set = db_connector.fetch_data("user_state", "username", username, ("videopass", "instructionpass", "score", "havetest",)).fetchall()
-    requirement = db_connector.fetch_data("machine_requirement", "id", 1, ("videorequire", "instructionrequire", "scorerequire")).fetchall()
+    truename = db_connector.get_attr("user_info", "username", username, ("truename", )).fetchall()[0][0]
+    result_set = db_connector.get_attr("user_state", "username", username, ("videopass", "instructionpass", "score", "havetest",)).fetchall()
+    requirement = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire", "instructionrequire", "scorerequire")).fetchall()
     return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
 
 
@@ -109,7 +117,9 @@ def after_watching():
     user = request.form['username']
     passed = int(request.form['video_pass'])
     if db_connector.update_attr("user_state", "username", user, videopass=passed):
-        video_require = db_connector.fetch_data("machine_requirement", "id", 1, ("videorequire",)).fetchall()[0]
+        video_require = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire",)).fetchall()[0]
+        print(passed)
+        print(video_require[0])
         return pack_response(0, "ok", finished=passed >= video_require[0])
     return pack_response(-1, "database error")
 
@@ -117,11 +127,22 @@ def after_watching():
 @app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
 def after_opening():
     user = request.form['username']
-    passed = int(request.form['instruction_pass'])
-    if db_connector.update_attr("user_state", "username", user, instructionpass=passed):
-        ins_require = db_connector.fetch_data("machine_requirement", "id", 1, ("instructionrequire",)).fetchall()[0]
-        return pack_response(0, "ok", finished=passed >= ins_require[0])
-    return pack_response(-1, "database error")
+    read_item = request.form['ins']
+    haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread", )).fetchall()[0][0]
+    if read_item in haveread.split(","):
+        return pack_response(0, "ok")
+    else:
+        if haveread == "":
+            haveread = read_item
+        else:
+            haveread += ",%s" % read_item
+        if db_connector.update_attr("instruction_record", "username", user, haveread=haveread):
+            require = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire", )).fetchall()[0]
+            db_connector.update_attr("user_state", "username", user, instructionpass=len(haveread.split(",")))
+            print(len(haveread.split(",")))
+            print(require[0])
+            return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
+        return pack_response(-1, "database error")
 
 
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])
