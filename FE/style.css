@@ -275,7 +275,7 @@ footer > #copyright {
 	transition: all 0.3s;
 }
 
-#mask {
+#mask_for_mask, #mask {
 	position: absolute;
 	display: none;
 	top: 0;
@@ -285,6 +285,10 @@ footer > #copyright {
 	background-color: #aaa;
 	opacity: 0.7;
 	z-index: 9995;
+}
+
+#mask_for_mask {
+	z-index: 999999;
 }
 
 #user_mask {
@@ -313,7 +317,7 @@ footer > #copyright {
 	/*background-color: rgb(128, 147, 151);*/
 	/*background-color: rgb(72, 116, 117);*/
 	background-color: #fff;
-	transform: translate3d(0, -150%, 0);
+	transform: translate3d(0, -250%, 0);
 	transition: all 0.4s;
 	z-index: 9998;
 }
