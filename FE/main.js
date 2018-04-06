@@ -38,6 +38,7 @@
 	var greeting = document.getElementById("greeting");
 	var submit_login = document.getElementById("submit_login");
 	var mask = document.getElementById("mask");
+	var maskmask = document.getElementById("mask_for_mask");
 	var logout_btn = document.getElementById("logout_btn");
 	var tooltip = document.getElementById("user_tooltip");
 
@@ -138,15 +139,16 @@
 	})
 
 	video.onended = function () {
-		video_control.children[1].innerHTML = "播放"
 		max_viewtime = 0
 		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○")
 			max_view += 1
 		// 告诉服务端, 用户看完了
 		fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}`)
 		// 自动获取下一个的视频
+		video_list.children[0].children[max_view-1].children[0].innerHTML = "√"
 		video_list.children[0].children[max_view].click()
 		video.play()
+		video_control.children[1].innerHTML = "暂停"
 	}
 
 	video_control.addEventListener('click', e => {
@@ -187,11 +189,17 @@
 		if (selected_pdf) {
 			// 调用PDF.js打开一个新窗口来阅读
 			window.open("http://127.0.0.1:5000/" + selected_pdf)
+			data = `username=${username}&ins=${selected_pdf}`
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		}
 		else {
 			alert("你还没有选择阅读材料.");
 		}
 	})
+
+	function check_ins_update(res) {
+		console.log(res)
+	}
 
 	/**
 	 * 主页的机器信息和介绍抓取
@@ -269,6 +277,7 @@
 		iter_nodes = video_list.children[0].children;
 		for ( let i = 0; i < iter_nodes.length; i++ ) {
 			if ( target == iter_nodes[i] ) {
+				if ( i == 0 ) return true
 				if ( iter_nodes[i-1].children[0].innerHTML == "√" ) {
 					return true
 				}
@@ -363,7 +372,7 @@
 		xhr.ontimeout = function (e) {
 			toggle_loading(0)
 			alert("错误(000T)! 请求超时,请检查网络连接.");
-			if (error_callback) error_callback(xhr);
+			if (error_callback) error_callback();
 		};
 		xhr.onerror = function (e) {
 			toggle_loading(0)
@@ -443,12 +452,19 @@
 		if (res['code'] == '0') {
 			// 注册成功
 			do_login_or_register("login")
+			toggle_login(0)
 		}
 		if (res['code'] == '-1') {
 			// 后台数据库写入失败
-			alert("注册失败! 后台数据写入异常!")
+			alert("注册失败! 后台数据写入异常! 请重试.")
+			mask.style['display'] = "block"
 		}
-		toggle_login(0)
+		if (res['code'] == '-4') {
+			alert("注册失败! 用户名已经被注册了!")
+			mask.style['display'] = "block"
+			login[0].value = ""
+		}
+		
 	}
 
 	/**
@@ -568,10 +584,12 @@
 	function toggle_loading(toggle) {
 		mask.style['display'] = toggle == "1" ? "block" : "none";
 		if (toggle == "1") {
+			maskmask.style['display'] = "block"
 			canvas.style['transform'] = "scale3d(1, 1, 1)";
 			loading_timer = requestAnimationFrame(render_loading)
 		}
 		else {
+			maskmask.style['display'] = "none"
 			cancelAnimationFrame(loading_timer)
 			canvas.style['transform'] = "scale3d(0, 0, 0)"
 		}
@@ -589,7 +607,7 @@
 			mask.addEventListener("click", toggle_login)
 		}
 		else {
-			login_panel.style['transform'] = "translate3d(0, -150%, 0)"
+			login_panel.style['transform'] = "translate3d(0, -250%, 0)"
 			mask.removeEventListener("click", toggle_login)
 		}
 		clear_login()
@@ -625,7 +643,7 @@
 		}
 	}
 
-	var items = document.getElementsByClassName("tooltip_item")
+	var items = document.getElementsByClassName("tip_value")
 	/**
 	 * 用户登录之后填充tooltip信息
 	 * @param  {[type]} res [description]
@@ -635,12 +653,10 @@
 		mask.style['display'] = "block"
 		tooltip.children[0].innerHTML = "你好," + res['truename']
 		for (let i = 0; i < items.length; i ++) {
-			items[i].innerHTML = items[i].innerHTML.replace("0/0", 
-					res.userstate[i] + "/" + res.requirement[i]
-				)
+			items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
 		}
 		if (res.userstate[3] == "0") {
-			items[2].innerHTML = '<p class="tooltip_item"><span class="tip_item">测评成绩:</span>还未参加测评</p>'
+			items[2].innerHTML = '还未参加测评'
 		}
 	}
 
