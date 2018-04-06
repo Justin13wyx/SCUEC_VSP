@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, session, redirect, send_file
 import db_connector
 
 import os
-from urllib.parse import unquote
+# from urllib.parse import unquote
 
 app = Flask(__name__)
 path = os.path
@@ -105,8 +105,8 @@ def logout():
 
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
-    username = request.values.get("username")
-    truename = db_connector.get_attr("user_info", "username", username, ("truename", )).fetchall()[0][0]
+    username = unquote(request.values.get("username"))
+    truename = db_connector.get_attr("user_info", "username", username, ("truename", )).fetchall()
     result_set = db_connector.get_attr("user_state", "username", username, ("videopass", "instructionpass", "score", "havetest",)).fetchall()
     requirement = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire", "instructionrequire", "scorerequire")).fetchall()
     return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
@@ -114,7 +114,7 @@ def push_info():
 
 @app.route(prefix.format("user", "updateVideoIndex"), methods=["POST"])
 def after_watching():
-    user = request.form['username']
+    user = unquote(request.form['username'])
     passed = int(request.form['video_pass'])
     if db_connector.update_attr("user_state", "username", user, videopass=passed):
         video_require = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire",)).fetchall()[0]
@@ -126,7 +126,7 @@ def after_watching():
 
 @app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
 def after_opening():
-    user = request.form['username']
+    user = unquote(request.form['username'])
     read_item = request.form['ins']
     haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread", )).fetchall()[0][0]
     if read_item in haveread.split(","):
@@ -186,6 +186,10 @@ def push_questions():
 @app.route(prefix.format("test", "uploadAnswers"), methods=['POST'])
 def check_answers():
     pass
+
+
+def unquote(string):
+    return string.replace("%", "\\").encode().decode("unicode-escape")
 
 
 def pack_response(status_code, msg, **kwargs):
