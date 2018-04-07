@@ -114,21 +114,23 @@ def push_info():
 
 @app.route(prefix.format("user", "updateVideoIndex"), methods=["POST"])
 def after_watching():
-    user = unquote(request.form['username'])
+    user = request.values.get('username')
     passed = int(request.form['video_pass'])
     if db_connector.update_attr("user_state", "username", user, videopass=passed):
         video_require = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire",)).fetchall()[0]
-        print(passed)
-        print(video_require[0])
         return pack_response(0, "ok", finished=passed >= video_require[0])
     return pack_response(-1, "database error")
 
 
 @app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
 def after_opening():
-    user = unquote(request.form['username'])
+    user = request.values.get("username")
     read_item = request.form['ins']
-    haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread", )).fetchall()[0][0]
+    haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread", )).fetchall()
+    if haveread:
+        haveread = haveread[0][0]
+    else:
+        haveread = ""
     if read_item in haveread.split(","):
         return pack_response(0, "ok")
     else:
@@ -137,10 +139,8 @@ def after_opening():
         else:
             haveread += ",%s" % read_item
         if db_connector.update_attr("instruction_record", "username", user, haveread=haveread):
-            require = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire", )).fetchall()[0]
+            require = db_connector.get_attr("machine_requirement", "id", 1, ("instructionrequire", )).fetchall()[0]
             db_connector.update_attr("user_state", "username", user, instructionpass=len(haveread.split(",")))
-            print(len(haveread.split(",")))
-            print(require[0])
             return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
         return pack_response(-1, "database error")
 
@@ -189,7 +189,7 @@ def check_answers():
 
 
 def unquote(string):
-    return string.replace("%", "\\").encode().decode("unicode-escape")
+    return string.replace("%", "\\").encode("utf-8").decode("unicode-escape")
 
 
 def pack_response(status_code, msg, **kwargs):
