@@ -198,7 +198,9 @@
 	})
 
 	function check_ins_update(res) {
-		console.log(res)
+		if (res['finished']) {
+			alert("你已经完成说明阅读要求")
+		}
 	}
 
 	/**
@@ -369,7 +371,7 @@
 		if (method === "POST") {
 			xhr.setRequestHeader("Content-Type", 'application/x-www-form-urlencoded');
 		}
-		xhr.send(data);
+		xhr.send(unescape(data));
 		xhr.ontimeout = function (e) {
 			toggle_loading(0)
 			alert("错误(000T)! 请求超时,请检查网络连接.");
@@ -405,14 +407,13 @@
 	 * @return {[type]}           [description]
 	 */
 	function do_login_or_register(abs_login) {
-		role = abs_login || document.getElementsByClassName("current_action")[0].getAttribute("data-role")
-		form = new Map()
+		let role = abs_login || document.getElementsByClassName("current_action")[0].getAttribute("data-role")
+		let form = new Map()
 		if (role == 'register') {
 			// 填充验证
 			for ( let i = 1; i < login_panel.childElementCount - 1; i++) {
 				if (login_panel.children[i].value == "") {
 					alert(login_panel.children[i].placeholder+"不能为空");
-					delete form
 					return;
 				}
 				if ( validate(login_panel.children[i].value) && filterSqlStr(login_panel.children[i].value) ) {
@@ -420,7 +421,6 @@
 				}
 				else  {
 					login_panel.children[i].value = ""
-					delete form
 					return;
 				}
 			}
@@ -449,7 +449,6 @@
 				}
 				else {
 					ele.value = ""
-					delete form
 					return;
 				}
 			}
