@@ -359,6 +359,7 @@
 	* @param  {[type]}   url      请求的接口地址
 	* @param  {Function} callback 收到请求的回调函数
 	* @param  {[type]}   data     POST的数据--类型:对象
+	* @param  {[type]}   error_callback 出现错误的时候调用的函数
 	*/
 	function fetch_data(method, url, callback, data, error_callback) {
 		toggle_loading(1)
@@ -372,13 +373,15 @@
 		xhr.ontimeout = function (e) {
 			toggle_loading(0)
 			alert("错误(000T)! 请求超时,请检查网络连接.");
-			if (error_callback) error_callback();
+			if (error_callback) error_callback(xhr);
 		};
 		xhr.onerror = function (e) {
 			toggle_loading(0)
 			alert("出现错误(000U)! 技术人员请参考控制台输出.")
 			console.log(xhr.status + "<->" + xhr.statusText);
-			if (error_callback) error_callback(xhr);
+			if (error_callback) {
+				error_callback(xhr);
+			}
 		};
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4 && xhr.status == 200) {
@@ -412,7 +415,14 @@
 					delete form
 					return;
 				}
-				form.set(login_panel.children[i].name, login_panel.children[i].value)
+				if ( validate(login_panel.children[i].value) && filterSqlStr(login_panel.children[i].value) ) {
+					form.set(login_panel.children[i].name, login_panel.children[i].value)
+				}
+				else  {
+					login_panel.children[i].value = ""
+					delete form
+					return;
+				}
 			}
 			// 密码验证
 			if ( login_part[2].value != login[1].value ) {
@@ -425,7 +435,7 @@
 			// 注册信息组装
 			data = make_data(form)
 			// 发送注册请求
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doSignin", check_register_state, data)
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doSignin", check_register_state, data, toggle_login)
 		}
 		else {
 			// 填充验证
@@ -434,12 +444,19 @@
 					alert(ele.placeholder+"不能为空");
 					return;
 				}
-				form.set(ele.name, ele.value)
+				if ( validate(ele.value) && filterSqlStr(ele.value) ) {
+					form.set(ele.name, ele.value)
+				}
+				else {
+					ele.value = ""
+					delete form
+					return;
+				}
 			}
 			// 登录信息组装
 			data = make_data(form)
 			// 发送登录请求
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogin", check_login_state, data)
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogin", check_login_state, data, toggle_login)
 		}
 	}
 
@@ -548,6 +565,41 @@
 		data = data.substr(0, data.length-1)
 		return data
 	}
+
+	/**
+	 * 非法字符的检测函数
+	 * @param  {[type]} value [description]
+	 * @return {[type]}       [description]
+	 */
+	function validate(value) {
+		var pattern = /[`~!@#$%^&*()_+<>?:"{},.\/;'[\]]/im;
+		if (value === '' || value === null) return false;
+		if (pattern.test(value)) {
+			alert("包含非法字符!");
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * 敏感字符的检测函数(数据库)
+	 * @param  {[type]} value [description]
+	 * @return {[type]}       [description]
+	 */
+	function filterSqlStr(value) {
+		var str = "and,delete,or,exec,insert,select,union,update,count,*,',join,>,<";
+		var sqlStr = str.split(',');
+		var flag = true;
+		for (var i = 0; i < sqlStr.length; i++) {
+			if (value.toLowerCase().indexOf(sqlStr[i]) != -1) {
+				alert("包含非法字符!")
+				flag = false;
+				break;
+			}
+		}
+		return flag;
+	}
+
 
 	/**
 	* 负责切换菜单点击后模块切换的统一接口
