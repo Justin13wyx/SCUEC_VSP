@@ -801,7 +801,7 @@
 	function _render_admin(res) {
 		action = res['attr']
 		if (action == "users") {
-			rule = [3, 5, 13, 25, 10, 10, 10, 24]
+			rule = [3, 5, 13, 10, 25, 10, 10, 24]
 		}
 		if (action == "videos") {
 			rule = [3, 10, 5, 5]
@@ -828,15 +828,23 @@
 		// 填充具体的表格
 		if (action == "users") {
 			main_ele = ""
-			for ( let m = 0; m < res['data'].length; m ++ ) {
+			for ( user of res['data'] ) {
 				main_ele += `<tr><td><input type="checkbox" name=""></td>`
-				for (let n = 0; n < res['data'][m].length; n ++) {
-					value = res['data'][m][n]
-					if (n == 4 || n == 5) {
-						value = res['data'][m][n] == 1 ? "是" : "否"
+				// 先填充前面的用户信息
+				for ( let m = 0; m < user['info'].length; m ++ ) {
+					value = user['info'][m]
+					if ( m == 4 || m == 5 ) {
+						value = user['info'][m] == 1 ? "是" : "否"
 					}
 					main_ele += `<td>${value}</td>`
 				}
+				// 再填充后面的用户状态
+				main_ele += `<td><div><p>视频观看: ${user['state'][0]}/${res['require'][0]}</p><p>说明阅读: ${user['state'][1]}/${res['require'][1]}</p>`
+				if ( user['state'][3] == 0 ) 
+					main_ele += "<p>尚未参加测评</p></div>"
+				else
+					main_ele += `<p>${user['state'][2]}/${res['require'][2]}<p></div>`
+				main_ele += `</tr>`
 			}
 			desc_area_body.children[1].innerHTML = main_ele
 		}

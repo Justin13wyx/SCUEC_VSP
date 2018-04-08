@@ -211,15 +211,15 @@ def admin_users():
     access = verify_token(request.values.get("token"))
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
-    title = ["ID", "用户名", "邮箱", "真实姓名", "被冻结", "是管理员", "用户状态"]
+    title = ["ID", "用户名", "真实姓名", "邮箱", "是管理员", "是否激活", "用户状态"]
     data = []
     info = db_connector.get_all("user_info").fetchall()
     state = db_connector.get_all("user_state").fetchall()
+    require = db_connector.get_all("machine_requirement").fetchall()[0][1:]
     for k, v in zip(info, state):
-        tmp = list(k)
-        tmp.extend(list(v)[2:])
+        tmp = {"info": k, "state": v[2:]}
         data.append(tmp)
-    return pack_response(0, "ok", title=title, data=data, attr="users")
+    return pack_response(0, "ok", title=title, require=require, data=data, attr="users")
 
 
 @app.route(prefix.format("admin", "videos"), methods=['POST'])
