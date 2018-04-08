@@ -4,7 +4,6 @@
 	<meta charset="UTF-8">
 	<title>中南民族大学大型仪器虚拟仿真服务平台</title>
 	<link rel="stylesheet" type="text/css" href="style.css">
-	<script src="lib/pdf.js"></script>
 </head>
 <body>
 	<header>
@@ -36,7 +35,7 @@
 					<div class="op_btn" data-map="1">查看视频</div>
 					<div class="op_btn" data-map="2">阅读说明</div>
 					<div class="op_btn" data-map="3">进行测试</div>
-					<div class="op_btn" data-map="0">其他操作</div>
+					<div class="op_btn" data-map="0">平台管理</div>
 				</div>
 			</div>
 		</section>
@@ -105,6 +104,86 @@
 	<canvas id="loading_token" width="300" height="300">
 		浏览器不支持该元素. 推荐使用Chrome.
 	</canvas>
+	<section id="admin_area">
+		<div id="sidebar">
+			<h2 id="aside_title">管理选项</h2>
+			<ul>
+				<li class="aside_list aside_selected"><a href="/admin/users" class="aside_select"><span>用户管理</span></a></li>
+				<li class="aside_list"><a href="/admin/videos" class="aside_select"><span>视频管理</span></a></li>
+				<li class="aside_list"><a href="/admin/instructions" class="aside_select"><span>说明材料管理</span></a></li>
+				<li class="aside_list"><a href="/admin/tests" class="aside_select"><span>测评管理</span></a></li>
+			</ul>
+		</div>
+		<div id="admin_main_area">
+			<div class="control_area">
+				<svg id="icon-close" width="30px" height="30px" viewbox="0 0 32 32">
+					<path d="M16 0c-8.837 0-16 7.163-16 16s7.163 16 16 16 16-7.163 16-16-7.163-16-16-16zM16 29c-7.18 0-13-5.82-13-13s5.82-13 13-13 13 5.82 13 13-5.82 13-13 13z"></path>
+					<path d="M21 8l-5 5-5-5-3 3 5 5-5 5 3 3 5-5 5 5 3-3-5-5 5-5z"></path>
+				</svg>
+			</div>
+			<div class="action_area">
+				<button class="action_btn">+ 新增</button>
+				<button class="action_btn">删除</button>
+				<button class="action_btn">冻结</button>
+				<button class="action_btn">激活</button>
+				<button class="action_btn">授权成为管理员</button>
+				<button class="action_btn">查看状态</button>
+				<button class="action_btn">设置及格线</button>
+			</div>
+			<div class="manager_area">
+				<table class="desc_area_head">
+					<colgroup>
+					</colgroup>
+					<thead>
+						<tr>
+						</tr>
+					</thead>
+				</table>
+				<table class="desc_area_body">
+					<colgroup>
+					</colgroup>
+					<tbody>
+						<tr>
+							<td>
+								<input type="checkbox" name="">
+							</td>
+							<td>1</td>
+							<td>admin</td>
+							<td>438425627@qq.com</td>
+							<td>魏尧暄</td>
+							<td>否</td>
+							<td>是</td>
+							<td>
+								<div>
+									<p>视频观看: 6/10</p>
+									<p>说明阅读: 1/1</p>
+									<p>尚未参加测评</p>
+								</div>
+							</td>
+						</tr>
+						<tr>
+							<td>
+								<input type="checkbox" name="">
+							</td>
+							<td>2</td>
+							<td>这是用户名</td>
+							<td>438425627@qq.com</td>
+							<td>魏尧暄</td>
+							<td>否</td>
+							<td>是</td>
+							<td>
+								<div>
+									<p>视频观看: 6/10</p>
+									<p>说明阅读: 1/1</p>
+									<p>尚未参加测评</p>
+								</div>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</section>
 	<script src="main.js"></script>
 </body>
 </html>

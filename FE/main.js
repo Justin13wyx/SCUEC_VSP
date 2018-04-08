@@ -18,6 +18,9 @@
 	btn2func.set("fetch_instruction", fetch_instruction)
 	btn2func.set("fetch_questions", fetch_questions) // data-func和目标回调函数引用的关联映射
 
+	var admin_area = document.getElementById("admin_area");
+	var close_btn = document.getElementById("icon-close");
+	var aside_nav = document.getElementsByClassName("aside_select");
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -58,6 +61,24 @@
 	// 	console.log(res)
 
 	// }
+	// 
+	close_btn.addEventListener("click", e => {
+		e.preventDefault()
+		e.cancelBubble = true;
+		deactive_admin()
+	})
+
+	for ( nav_btn of aside_nav ) {
+		nav_btn.addEventListener("click", e => {
+			e.preventDefault()
+			let target = e.srcElement || e.target
+			if ( target.tagName == "SPAN" ) {
+				target = target.parentElement;
+			}
+			let api_path = target.getAttribute("href")
+			render_admin(api_path)
+		})
+	}
 
 	// 导航栏的按钮切换view的事件绑定
 	// TODO: 如果不支持let关键字时间绑定就会全部失效
@@ -81,7 +102,13 @@
 				nav_btns[index].click()
 			})
 		}
-		else btn.onclick = e => { alert("操作未定义.") }
+		else {
+			btn.addEventListener("click", e => {
+				e.preventDefault()
+				e.cancelBubble = true
+				active_admin()
+			})
+		}
 	}
 
 	// 登录和注册的面板切换的事件绑定
@@ -122,7 +149,8 @@
 	}
 
 	video_list.addEventListener("click", e => {
-		if ( e.target.hasAttribute("link") ) {
+		target = e.target || e.srcElement
+		if ( target.hasAttribute("link") ) {
 			// 检查是否跳跃观看了
 			if (checkplaying(e.target)) {
 				max_viewtime = 0
@@ -131,7 +159,7 @@
 				for ( node of video_list.children[0].children) {
 					node.removeAttribute("class")
 				}
-				e.target.setAttribute("class", "playing")
+				target.setAttribute("class", "playing")
 			}
 			else
 				alert("请按照顺序观看")
@@ -153,23 +181,24 @@
 
 	video_control.addEventListener('click', e => {
 		e.preventDefault()
-		if (e.target.dataset['role'] == "-10") {
+		target = e.target || e.srcElement
+		if (target.dataset['role'] == "-10") {
 			video.currentTime -= 10;
 		}
-		else if (e.target.dataset['role'] == "+10") {
+		else if (target.dataset['role'] == "+10") {
 			if (video.currentTime + 1 < max_viewtime) {
 				video.currentTime += 10
 			}
 			else video.currentTime = max_viewtime
 		}
-		else if (e.target.dataset['role'] == "play") {
-			toggle_play(e.target)
+		else if (target.dataset['role'] == "play") {
+			toggle_play(target)
 		}
 	})
 
 	pdfs.addEventListener("click", e => {
 		e.preventDefault()
-		pdf = e.target
+		pdf = e.target || e.srcElement
 		if (pdf.getAttribute("class") == "pdf") {
 			for (each of pdfs.children) {
 				each.setAttribute("class", "pdf");
@@ -187,7 +216,6 @@
 
 	read_trigger.addEventListener("click", e => {
 		if (selected_pdf) {
-			// 调用PDF.js打开一个新窗口来阅读
 			window.open("http://127.0.0.1:5000/" + selected_pdf)
 			data = `username=${username}&ins=${selected_pdf}`
 			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
@@ -201,6 +229,33 @@
 		if (res['finished']) {
 			alert("你已经完成说明阅读要求")
 		}
+	}
+
+	function active_admin() {
+		// 1. 向远端验证用户身份, 并且获取一个token用来在以后的API调用时进行AUTH
+		// 2. 激活管理页面
+		if (access) {
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/getToken", _active_admin, "username=" + username)
+			admin_area.style['transform'] = "scale3d(1, 1, 1)"
+		}
+		else alert("你还没有登录!")
+	}
+
+	function _active_admin(res) {
+		if (!res['access']) {
+			alert("你没有权限访问.")
+			deactive_admin()
+			return;
+		}
+		token = res['token']
+		localStorage.setItem("token", token)
+		// 模拟点击用户管理
+		aside_nav[0].click()
+	}
+
+	function deactive_admin() {
+		localStorage.removeItem("token")
+		admin_area.style['transform'] = "scale3d(1, 0, 1)"
 	}
 
 	/**
@@ -730,5 +785,63 @@
 		start_angle %= Math.PI * 2 // 防止数值太大
 		loading_timer = requestAnimationFrame(render_loading)
 	}
+
+	/**
+	 * 统一处理管理页面的渲染的入口函数
+	 * @param  {[type]} api [description]
+	 * @return {[type]}     [description]
+	 */
+	function render_admin(api) {
+		fetch_data("POST", "http://127.0.0.1:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"))
+	}
+
+
+	var desc_area_head = document.getElementsByClassName("desc_area_head")[0];
+	var desc_area_body = document.getElementsByClassName("desc_area_body")[0];
+	function _render_admin(res) {
+		action = res['attr']
+		if (action == "users") {
+			rule = [3, 5, 13, 25, 10, 10, 10, 24]
+		}
+		if (action == "videos") {
+			rule = [3, 10, 5, 5]
+		}
+		if (action == "instructions") {
+			rule = [3, 10, 5, 5]
+		}
+		if (action == "tests") {
+			rule = [3, 35, 35, 17]
+		}
+		// 填充位置约束的colgroup
+		rule_ele = ""
+		for ( let i = 0; i < rule.length; i ++ ) {
+			rule_ele += `<col style="width: ${rule[i]}%">`
+		}
+		desc_area_head.children[0].innerHTML = rule_ele
+		desc_area_body.children[0].innerHTML = rule_ele
+		// 填充title
+		title_ele = `<th><input type="checkbox" name="sum"></th>`
+		for ( let j = 0; j < res['title'].length; j ++ ) {
+			title_ele += `<th>${res['title'][j]}</th>`
+		}
+		desc_area_head.children[1].children[0].innerHTML = title_ele
+		// 填充具体的表格
+		if (action == "users") {
+			main_ele = ""
+			for ( let m = 0; m < res['data'].length; m ++ ) {
+				main_ele += `<tr><td><input type="checkbox" name=""></td>`
+				for (let n = 0; n < res['data'][m].length; n ++) {
+					value = res['data'][m][n]
+					if (n == 4 || n == 5) {
+						value = res['data'][m][n] == 1 ? "是" : "否"
+					}
+					main_ele += `<td>${value}</td>`
+				}
+			}
+			desc_area_body.children[1].innerHTML = main_ele
+		}
+	}
+
+
 
 })()
