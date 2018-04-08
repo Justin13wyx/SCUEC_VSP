@@ -13,15 +13,26 @@ cursor = conn.cursor()
 IntegerityError = sqlite3.IntegrityError
 OperationalError = sqlite3.OperationalError
 
-fetch_sql = "SELECT {} FROM {} WHERE {}"
+get_sql = "SELECT {} FROM {} WHERE {}"
 set_sql = "INSERT INTO {} {} VALUES {}"
 del_sql = "DELETE FROM {} WHERE {}"
 update_sql = "UPDATE {} SET {} WHERE {}"
 
 
+def get_all(table):
+    sql = "SELECT * FROM {}".format(str(table))
+    try:
+        result_cursor = cursor.execute(sql)
+    except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
+        print(sql)
+        print(e)
+        return False
+    return result_cursor
+
+
 def get_attr(table, keyword, value, fields):
     condition = "{}='{}'".format(str(keyword), str(value))
-    sql = fetch_sql.format(trim_comma(fields).replace("\'", "")[1:-1], str(table), condition)
+    sql = get_sql.format(trim_comma(fields).replace("\'", "")[1:-1], str(table), condition)
     try:
         result_cursor = cursor.execute(sql)
     except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:

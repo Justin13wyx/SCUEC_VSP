@@ -1,7 +1,9 @@
-from flask import Flask, request, jsonify, session, redirect, send_file
+from flask import Flask, request, jsonify, session, redirect, send_file, abort
+from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 import db_connector
 
 import os
+
 # from urllib.parse import unquote
 
 app = Flask(__name__)
@@ -22,6 +24,7 @@ BASEPATH = "."
 # ###############
 
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
+gen = TimedJSONWebSignatureSerializer(app.secret_key, expires_in=600)
 
 
 @app.route("/")
@@ -43,12 +46,13 @@ def register():
         return pack_response(-1, "database written failed!")
     if result:
         # 用户信息设置成功, 设置密码记录
-        result = db_connector.set_attr("secret", ("username", info_keys[-1],), (user_info['username'], db_connector.hash_passwd(info_values[-1]),))
+        result = db_connector.set_attr("secret", ("username", info_keys[-1],),
+                                       (user_info['username'], db_connector.hash_passwd(info_values[-1]),))
     if result:
         # 初始化用户状态
-        result = db_connector.set_attr("user_state", ("username", ), (user_info['username'], ))
+        result = db_connector.set_attr("user_state", ("username",), (user_info['username'],))
     if result:
-        result = db_connector.set_attr("instruction_record", ("username", "haveread", ), (user_info['username'], "", ))
+        result = db_connector.set_attr("instruction_record", ("username", "haveread",), (user_info['username'], "",))
     if result:
         # 设置都成功, 注册成功
         return pack_response(0, "ok")
@@ -68,7 +72,7 @@ def login():
     # 哈希传过来的密码
     secret = db_connector.hash_passwd(login_info['secret'])
     user_id = db_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
-    if username in session: # 如果在会话中, 直接确认
+    if username in session:  # 如果在会话中, 直接确认
         return pack_response(0, "ok", username=username, root=user_id[1])
     # 数据库尝试抓取用户ID
     if not user_id:
@@ -106,9 +110,11 @@ def logout():
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
     username = unquote(request.values.get("username"))
-    truename = db_connector.get_attr("user_info", "username", username, ("truename", )).fetchall()
-    result_set = db_connector.get_attr("user_state", "username", username, ("videopass", "instructionpass", "score", "havetest",)).fetchall()
-    requirement = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire", "instructionrequire", "scorerequire")).fetchall()
+    truename = db_connector.get_attr("user_info", "username", username, ("truename",)).fetchall()
+    result_set = db_connector.get_attr("user_state", "username", username,
+                                       ("videopass", "instructionpass", "score", "havetest",)).fetchall()
+    requirement = db_connector.get_attr("machine_requirement", "id", 1,
+                                        ("videorequire", "instructionrequire", "scorerequire")).fetchall()
     return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
 
 
@@ -126,7 +132,7 @@ def after_watching():
 def after_opening():
     user = request.values.get("username")
     read_item = request.form['ins']
-    haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread", )).fetchall()
+    haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread",)).fetchall()
     if haveread:
         haveread = haveread[0][0]
     else:
@@ -139,7 +145,7 @@ def after_opening():
         else:
             haveread += ",%s" % read_item
         if db_connector.update_attr("instruction_record", "username", user, haveread=haveread):
-            require = db_connector.get_attr("machine_requirement", "id", 1, ("instructionrequire", )).fetchall()[0]
+            require = db_connector.get_attr("machine_requirement", "id", 1, ("instructionrequire",)).fetchall()[0]
             db_connector.update_attr("user_state", "username", user, instructionpass=len(haveread.split(",")))
             return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
         return pack_response(-1, "database error")
@@ -188,6 +194,72 @@ def check_answers():
     pass
 
 
+@app.route(prefix.format("admin", "getToken"), methods=['POST'])
+def validate_user():
+    user = request.values.get("username")
+    access = db_connector.get_attr("user_info", "username", user, ("isroot", "isactive",)).fetchall()[0]
+    if access[0] == 0:
+        return pack_response(233, "No access", access=False)
+    if access[1] == 0:
+        return pack_response(23, "Not active", access=False)
+    token = get_token({"username": user})
+    return pack_response(0, "ok", access=True, token=token.decode())
+
+
+@app.route(prefix.format("admin", "users"), methods=['POST'])
+def admin_users():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    title = ["ID", "用户名", "邮箱", "真实姓名", "被冻结", "是管理员", "用户状态"]
+    data = []
+    info = db_connector.get_all("user_info").fetchall()
+    state = db_connector.get_all("user_state").fetchall()
+    for k, v in zip(info, state):
+        tmp = list(k)
+        tmp.extend(list(v)[2:])
+        data.append(tmp)
+    return pack_response(0, "ok", title=title, data=data, attr="users")
+
+
+@app.route(prefix.format("admin", "videos"), methods=['POST'])
+def admin_videos():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    title = ["ID", "视频名", "大小", "类型"]
+
+
+@app.route(prefix.format("admin", "instructions"), methods=['POST'])
+def admin_ins():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    title = ["ID", "文档名", "大小", "类型"]
+
+
+@app.route(prefix.format("admin", "tests"), methods=['POST'])
+def admin_tests():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    title = ["ID", "题目", "选项", "答案"]
+
+
+def get_token(obj):
+    return gen.dumps(obj)
+
+
+def verify_token(token):
+    try:
+        data = gen.loads(token)
+    except BadSignature as error:
+        return -1, error.message
+    except SignatureExpired as exp:
+        return -2, exp.message
+    return 0, data
+
+
 def unquote(string):
     return string.replace("%", "\\").encode("utf-8").decode("unicode-escape")
 
@@ -206,6 +278,6 @@ def pack_response(status_code, msg, **kwargs):
 
 if __name__ == "__main__":
     try:
-        app.run(debug=True)
+        app.run(debug=True, threaded=True)
     except Exception as e:
         print(e)
