@@ -451,7 +451,7 @@ footer > #copyright {
 	height: 100%;
 	background-color: rgb(191, 210, 222);
 	transition: all 0.3s;
-	/*transform: scale3d(1, 0, 1);*/
+	transform: scale3d(1, 0, 1);
 	transform-origin: bottom;
 }
 

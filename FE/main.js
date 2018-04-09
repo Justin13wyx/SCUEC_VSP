@@ -22,6 +22,7 @@
 	var close_btn = document.getElementById("icon-close");
 	var aside_nav = document.getElementsByClassName("aside_select");
 	var aside_list = document.getElementsByClassName("aside_list");
+	var action_btns = document.getElementsByClassName("action_btn");
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -62,13 +63,23 @@
 	// 	console.log(res)
 
 	// }
-	// 
+
+	// 具体的管理功能事件绑定
+	for ( action_btn of action_btns ) {
+		action_btn.addEventListener("click", e => {
+			e.preventDefault()
+
+		})
+	}
+
+	// 关闭管理面板的事件绑定
 	close_btn.addEventListener("click", e => {
 		e.preventDefault()
 		e.cancelBubble = true;
 		deactive_admin()
 	})
 
+	// 管理功能切换事件绑定
 	for ( nav_btn of aside_nav ) {
 		nav_btn.addEventListener("click", e => {
 			e.preventDefault()
@@ -87,10 +98,6 @@
 	}
 
 	// 导航栏的按钮切换view的事件绑定
-	// TODO: 如果不支持let关键字时间绑定就会全部失效
-	// 注: 正常情况下, Win10应该没问题, 怕的是Win7啊
-	// 其实这里一种更好的解决方法是直接捕获整个nav区域的点击事件, 根据
-	// target来进行判断, 但我同样担心兼容性(IE8)
 	for ( let btn of nav_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
@@ -237,9 +244,12 @@
 		}
 	}
 
+	/**
+	 * 1. 向远端验证用户身份, 并且获取一个token用来在以后的API调用时进行AUTH
+	 * 2. 激活管理页面
+	 * @return {[type]} [description]
+	 */
 	function active_admin() {
-		// 1. 向远端验证用户身份, 并且获取一个token用来在以后的API调用时进行AUTH
-		// 2. 激活管理页面
 		if (access) {
 			fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/getToken", _active_admin, "username=" + username)
 			admin_area.style['transform'] = "scale3d(1, 1, 1)"
@@ -247,6 +257,11 @@
 		else alert("你还没有登录!")
 	}
 
+	/**
+	 * 召唤出管理页面, 默认用用户管理做首页
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function _active_admin(res) {
 		if (!res['access']) {
 			alert("你没有权限访问.")
@@ -259,6 +274,10 @@
 		aside_nav[0].click()
 	}
 
+	/**
+	 * 删除token并且把admin页面隐藏
+	 * @return {[type]} [description]
+	 */
 	function deactive_admin() {
 		localStorage.removeItem("token")
 		admin_area.style['transform'] = "scale3d(1, 0, 1)"
@@ -357,6 +376,11 @@
 		fetch_data("GET", "http://127.0.0.1:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction)
 	}
 
+	/**
+	 * 渲染PDF
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function _fetch_instruction(res) {
 		html = ""
 		for ( let i = 0; i < res['data'].length; i ++ ) {
@@ -804,8 +828,14 @@
 
 	var desc_area_head = document.getElementsByClassName("desc_area_head")[0];
 	var desc_area_body = document.getElementsByClassName("desc_area_body")[0];
+	/**
+	 * 渲染管理界面的函数, 除了用户单独处理, 其他的都使用统一渲染方式
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function _render_admin(res) {
-		console.log(res['access'])
+		desc_area_head.children[1].innerHTML = ""
+		desc_area_body.children[1].innerHTML = ""
 		if (!res['access']) {
 			console.log(res['msg'])
 			if ( res['code'] == -1 )
@@ -835,16 +865,17 @@
 		desc_area_head.children[0].innerHTML = rule_ele
 		desc_area_body.children[0].innerHTML = rule_ele
 		// 填充title
-		title_ele = `<th><input type="checkbox" name="sum"></th>`
+		title_ele = `<tr><th><input type="checkbox" data-action="all" class="admin_checkbox admin_checkbox_all"></th>`
 		for ( let j = 0; j < res['title'].length; j ++ ) {
 			title_ele += `<th>${res['title'][j]}</th>`
 		}
-		desc_area_head.children[1].children[0].innerHTML = title_ele
+		title_ele += "</tr>"
+		desc_area_head.children[1].innerHTML = title_ele
 		// 填充具体的表格
 		if (action == "users") {
 			main_ele = ""
 			for ( user of res['data'] ) {
-				main_ele += `<tr><td><input type="checkbox" name=""></td>`
+				main_ele += `<tr><td><input type="checkbox" data-name="" class="admin_checkbox"></td>`
 				// 先填充前面的用户信息
 				for ( let m = 0; m < user['info'].length; m ++ ) {
 					value = user['info'][m]
@@ -862,11 +893,17 @@
 				main_ele += `</tr>`
 			}
 			desc_area_body.children[1].innerHTML = main_ele
+			// disable最后一个按钮
+			for ( let btn = 0; btn < action_btns.length; btn ++ ) {
+				action_btns[btn].setAttribute("class", "action_btn")
+			}
+			action_btns[5].setAttribute("class", "action_btn action_disable")
+			bind_checkbox()
 			return;
 		}
 		main_ele = ""
 		for ( let item = 0; item < res['data'].length; item ++ ) {
-			main_ele += `<tr><td><input type="checkbox" name=""></td>`
+			main_ele += `<tr><td><input type="checkbox" data-action="" class="admin_checkbox"></td>`
 			main_ele += `<td>${item+1}</td>`
 			for ( let n = 0; n < res['data'][item].length; n ++ ) {
 				main_ele += `<td>${res['data'][item][n]}</td>`
@@ -874,9 +911,34 @@
 			main_ele += "</tr>"
 		}
 		desc_area_body.children[1].innerHTML = main_ele
+		// 调整上方操作按钮
+		for ( let btn = 0; btn < action_btns.length; btn ++ ) {
+			action_btns[btn].setAttribute("class", "action_btn")
+			if ( btn >= 2 && btn <= 4 )
+				action_btns[btn].setAttribute("class", "action_btn action_disable")
+		}
+		bind_checkbox()
 		return;
 	}
 
-
+	function bind_checkbox() {
+		box = document.getElementsByClassName("admin_checkbox_all")[0]
+		boxes = document.getElementsByClassName("admin_checkbox")
+		for ( let b = 1; b < boxes.length; b ++ ) {
+			boxes[b].addEventListener("click", e => {
+				for ( let b = 1; b < boxes.length; b ++ ) {
+					if ( !boxes[b].checked ) {
+						box.checked = false
+						return;
+					}
+				}
+				box.click()
+			})
+		}
+		box.addEventListener("click", e => {
+			for ( let b = 1; b < boxes.length; b ++ )
+				boxes[b].checked = box.checked
+		})
+	}
 
 })()
