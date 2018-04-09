@@ -21,6 +21,7 @@
 	var admin_area = document.getElementById("admin_area");
 	var close_btn = document.getElementById("icon-close");
 	var aside_nav = document.getElementsByClassName("aside_select");
+	var aside_list = document.getElementsByClassName("aside_list");
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -74,6 +75,11 @@
 			let target = e.srcElement || e.target
 			if ( target.tagName == "SPAN" ) {
 				target = target.parentElement;
+			}
+			for ( let ele of aside_list ) {
+				ele.setAttribute("class", "aside_list")
+				if ( ele == target.parentElement)
+					ele.setAttribute("class", "aside_list aside_selected")
 			}
 			let api_path = target.getAttribute("href")
 			render_admin(api_path)
@@ -799,15 +805,24 @@
 	var desc_area_head = document.getElementsByClassName("desc_area_head")[0];
 	var desc_area_body = document.getElementsByClassName("desc_area_body")[0];
 	function _render_admin(res) {
+		console.log(res['access'])
+		if (!res['access']) {
+			console.log(res['msg'])
+			if ( res['code'] == -1 )
+				alert("密钥错误! 请重新登录!")
+			if ( res['code'] == -2 )
+				alert("密钥过期! 请重新登录!")
+			return;
+		}
 		action = res['attr']
 		if (action == "users") {
 			rule = [3, 5, 13, 10, 25, 10, 10, 24]
 		}
 		if (action == "videos") {
-			rule = [3, 10, 5, 5]
+			rule = [3, 10, 20, 10]
 		}
 		if (action == "instructions") {
-			rule = [3, 10, 5, 5]
+			rule = [3, 10, 20, 10]
 		}
 		if (action == "tests") {
 			rule = [3, 35, 35, 17]
@@ -847,7 +862,19 @@
 				main_ele += `</tr>`
 			}
 			desc_area_body.children[1].innerHTML = main_ele
+			return;
 		}
+		main_ele = ""
+		for ( let item = 0; item < res['data'].length; item ++ ) {
+			main_ele += `<tr><td><input type="checkbox" name=""></td>`
+			main_ele += `<td>${item+1}</td>`
+			for ( let n = 0; n < res['data'][item].length; n ++ ) {
+				main_ele += `<td>${res['data'][item][n]}</td>`
+			}
+			main_ele += "</tr>"
+		}
+		desc_area_body.children[1].innerHTML = main_ele
+		return;
 	}
 
 

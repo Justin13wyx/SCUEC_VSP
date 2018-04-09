@@ -219,7 +219,7 @@ def admin_users():
     for k, v in zip(info, state):
         tmp = {"info": k, "state": v[2:]}
         data.append(tmp)
-    return pack_response(0, "ok", title=title, require=require, data=data, attr="users")
+    return pack_response(0, "ok", title=title, require=require, data=data, attr="users", access=True)
 
 
 @app.route(prefix.format("admin", "videos"), methods=['POST'])
@@ -228,6 +228,11 @@ def admin_videos():
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "视频名", "大小", "类型"]
+    data = []
+    videos = os.listdir(path.join(BASEPATH, "video", "0"))
+    for video in videos:
+        data.append([video, get_size(path.join(BASEPATH, "video", "0", video)), path.splitext(video)[-1]])
+    return pack_response(0, "ok", title=title, data=data, attr="videos", access=True)
 
 
 @app.route(prefix.format("admin", "instructions"), methods=['POST'])
@@ -236,6 +241,13 @@ def admin_ins():
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "文档名", "大小", "类型"]
+    data = []
+    ins = os.listdir(path.join(BASEPATH, "instructions", "0"))
+    for instruction in ins:
+        data.append(
+            [instruction, get_size(path.join(BASEPATH, "instructions", "0", instruction)), path.splitext(instruction)[-1]]
+        )
+    return pack_response(0, "ok", title=title, data=data, attr="instructions", access=True)
 
 
 @app.route(prefix.format("admin", "tests"), methods=['POST'])
@@ -248,6 +260,15 @@ def admin_tests():
 
 def get_token(obj):
     return gen.dumps(obj)
+
+
+def get_size(path):
+    flag = ["Gb", "Mb", "Kb", "B"]
+    size = raw_size = os.path.getsize(path)
+    while size > 1024:
+        size = size >> 10
+        flag.pop()
+    return str(size) + flag[-1]
 
 
 def verify_token(token):
