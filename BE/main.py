@@ -47,22 +47,27 @@ def register():
     info_keys = list(user_info.keys())
     info_values = list(user_info.values())
     try:
-        result = db_connector.set_attr("user_info", tuple(info_keys[:-1]), tuple(info_values[:-1]))  # 设置用户信息
+        result = db_connector.set_attr("user_info", tuple(info_keys[:3]), tuple(info_values[:3]))  # 设置用户信息
     except db_connector.IntegrityError as error:
         if "UNIQUE" in error and "username" in error:
             return pack_response(-4, "duplicate username")
         return pack_response(-1, "database written failed!")
     if result:
         # 用户信息设置成功, 设置密码记录
-        result = db_connector.set_attr("secret", ("username", info_keys[-1],),
-                                       (user_info['username'], db_connector.hash_passwd(info_values[-1]),))
+        result = db_connector.set_attr("secret", ("username", info_keys[3],),
+                                       (user_info['username'], db_connector.hash_passwd(info_values[3]),))
     if result:
         # 初始化用户状态
         result = db_connector.set_attr("user_state", ("username",), (user_info['username'],))
     if result:
         result = db_connector.set_attr("instruction_record", ("username", "haveread",), (user_info['username'], "",))
     if result:
-        # 设置都成功, 注册成功
+        # 设置都成功, 注册成功, 如果是从admin页面来的, 就加上一个api的参数
+        if request.values.get("token"):
+            access = verify_token(request.values.get("token"))
+            if access[0] < 0:
+                return pack_response(access[0], access[1], access=False)
+            return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"))
         return pack_response(0, "ok")
     else:
         # 写入失败, 删除用户信息记录, 注册失败
@@ -113,6 +118,11 @@ def login():
 def logout():
     session.pop(request.form['username'], None)
     return pack_response(0, "ok")
+
+
+@app.route(prefix.format("user", "delUser"), methods=["POST"])
+def rm_user():
+    pass
 
 
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])

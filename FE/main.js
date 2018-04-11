@@ -319,6 +319,7 @@
 	 */
 	function deactive_admin() {
 		localStorage.removeItem("token")
+		admin_state = ""
 		admin_area.style['transform'] = "scale3d(1, 0, 1)"
 	}
 
@@ -558,6 +559,10 @@
 				return;
 			}
 			form.delete("passwd_validate");
+			if (admin_state == "users") {
+				form.set("token", localStorage.getItem("token"))
+				form.set("state", admin_state)
+			}
 			// 注册信息组装
 			data = make_data(form)
 			// 发送注册请求
@@ -593,8 +598,14 @@
 	function check_register_state(res) {
 		if (res['code'] == '0') {
 			// 注册成功
-			do_login_or_register("login")
 			toggle_login(0)
+			//TODO: admin特例处理
+			if ( res['api'] ) {
+				render_admin(res['api'])
+				return;
+			}
+			// 如果不是在管理界面, 就直接登陆了
+			do_login_or_register("login")
 		}
 		if (res['code'] == '-1') {
 			// 后台数据库写入失败
