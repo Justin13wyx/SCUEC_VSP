@@ -313,8 +313,6 @@ footer > #copyright {
 	margin: -210px 0 0 -310px;
 	border-radius: 10px;
 	padding: 20px;
-	/*background-color: rgb(128, 147, 151);*/
-	/*background-color: rgb(72, 116, 117);*/
 	background-color: #fff;
 	transform: translate3d(0, -250%, 0);
 	transition: all 0.4s;
@@ -588,3 +586,63 @@ footer > #copyright {
 	border-bottom: 2px solid rgb(171, 171, 171);
 }
 
+
+#admin_inputbox {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	align-items: center;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 300px;
+	height: 200px;
+	margin: -110px 0 0 -160px;
+	background-color: #fff;
+	border-radius: 20px;
+	padding: 20px;
+	transform: scale3d(0,0,0);
+	transition: all 0.4s;
+}
+
+#admin_inputbox > #input_area {
+	flex: 2;
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
+	font-size: 19px;
+}
+
+#admin_inputbox > #input_area > input {
+	height: 30px;
+	padding: 10px;
+	border: 3px solid #eee;
+	border-radius: 10px;
+	font-size: 18px;
+}
+
+#admin_inputbox > #admin_control {
+	flex: 1;
+	align-self: stretch;
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: space-around;
+}
+
+#admin_inputbox > #admin_control > button {
+	width: 100px;
+	height: 30px;
+	background-color: #eee;
+	border: none;
+	cursor: pointer;
+	border-radius: 5px;
+	transition: all 0.4s;
+}
+
+#admin_inputbox > #admin_control > button:hover {
+	background-color: #aaa;
+	color: #eee;
+	font-size: 16px;
+}

@@ -23,6 +23,9 @@
 	var aside_nav = document.getElementsByClassName("aside_select");
 	var aside_list = document.getElementsByClassName("aside_list");
 	var action_btns = document.getElementsByClassName("action_btn");
+	var control_btns = document.getElementById("admin_control").children;
+	var admin_inputbox = document.getElementById("admin_inputbox");
+	var admin_input = document.getElementById("input_area");
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -55,6 +58,8 @@
 	var access = 0;
 	var username = "";
 
+	var admin_state = ""
+
 	// window.onload = e => {
 	// 	fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/checkLogin", check_state, null)
 	// }
@@ -68,7 +73,37 @@
 	for ( action_btn of action_btns ) {
 		action_btn.addEventListener("click", e => {
 			e.preventDefault()
+			if (e.target.getAttribute("class").match("action_disable")) {
+				alert("功能不可用!")
+				return;
+			}
+			let action = e.target.dataset['action']
+			if ( action == "setpass" ) {
+				toggle_admin_inputbox(true)
+				return;
+			}
+			let target = check_target()
+			action(target, action)
+		})
+	}
 
+	for ( let btn of control_btns ) {
+		btn.addEventListener("click", e => {
+			e.preventDefault()
+			let action = e.target.dataset['action']
+			if ( action == "cancel" )
+				toggle_admin_inputbox(false)
+			else {
+				// 执行操作
+				let data = new Map()
+				data.set("token", localStorage.getItem("token"))
+				data.set("username", username)
+				data.set("state", admin_state)
+				data.set("passline", admin_input.children.pass.value)
+				data = make_data(data)
+				if (confirm("确定设置成" + admin_input.children.pass.value + "?"))
+					fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/setpass", check_setpass_state, data)
+			}
 		})
 	}
 
@@ -93,6 +128,7 @@
 					ele.setAttribute("class", "aside_list aside_selected")
 			}
 			let api_path = target.getAttribute("href")
+			admin_state = api_path.split("/")[2]
 			render_admin(api_path)
 		})
 	}
@@ -825,6 +861,22 @@
 		fetch_data("POST", "http://127.0.0.1:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"))
 	}
 
+	function check_setpass_state(res) {
+		if (res['code'] == 0) {
+			alert("修改成功!")
+			toggle_admin_inputbox(false)
+		}
+		else
+			alert("修改失败!")
+	}
+
+	function toggle_admin_inputbox(toggle) {
+		admin_input.children.pass.value = ""
+		if ( toggle )
+			admin_inputbox.style['transform'] = "scale3d(1,1,1)"
+		else
+			admin_inputbox.style['transform'] = "scale3d(0,0,0)"
+	}
 
 	var desc_area_head = document.getElementsByClassName("desc_area_head")[0];
 	var desc_area_body = document.getElementsByClassName("desc_area_body")[0];
@@ -837,11 +889,10 @@
 		desc_area_head.children[1].innerHTML = ""
 		desc_area_body.children[1].innerHTML = ""
 		if (!res['access']) {
-			console.log(res['msg'])
 			if ( res['code'] == -1 )
-				alert("密钥错误! 请重新登录!")
+				alert("密钥过期! 请重新进入管理页面!")
 			if ( res['code'] == -2 )
-				alert("密钥过期! 请重新登录!")
+				alert("密钥错误! 请尝试重新登录!")
 			return;
 		}
 		action = res['attr']
@@ -939,6 +990,18 @@
 			for ( let b = 1; b < boxes.length; b ++ )
 				boxes[b].checked = box.checked
 		})
+	}
+
+	function check_target() {
+		let target = [];
+		boxes = document.getElementsByClassName("admin_checkbox")
+		if ( boxes[0].checked ) {
+
+		}
+	}
+
+	function action(target, action) {
+
 	}
 
 })()
