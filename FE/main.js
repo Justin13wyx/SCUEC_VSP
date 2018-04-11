@@ -462,9 +462,11 @@
 	 */
 	function panel_switch(role) {
 		clear_login()
+		submit_login.setAttribute("data-action", role)
 		for ( let part of login_part ) {
 			part.style["display"] = role == "login" ? "none" : "block"
 		}
+
 	}
 
 	/**
@@ -525,13 +527,13 @@
 
 	/**
 	 * 执行登录或者注册操作, 由当前显示的输入信息决定执行哪一个操作
-	 * 都会先进行各自的填充本地验证, 接着组装信息 将他们发送
-	 * TODO: 这里没有做特殊字符的安全性验证
+	 * 都会先进行各自的填充本地验证, 接着组装信息 将他们发送.
+	 * 增加了敏感字符和SQL关键字的过滤
 	 * @param  {[type]} abs_login [description]
 	 * @return {[type]}           [description]
 	 */
 	function do_login_or_register(abs_login) {
-		let role = abs_login || document.getElementsByClassName("current_action")[0].getAttribute("data-role")
+		let role = abs_login || submit_login.dataset['action'] || document.getElementsByClassName("current_action")[0].dataset['role']
 		let form = new Map()
 		if (role == 'register') {
 			// 填充验证
@@ -695,7 +697,7 @@
 	 * @return {[type]}       [description]
 	 */
 	function validate(value) {
-		var pattern = /[`~!@#$%^&*()_+<>?:"{},.\/;'[\]]/im;
+		var pattern = /[`~!#$%^&*()_+<>?:"{},\/;'[\]]/im;
 		if (value === '' || value === null) return false;
 		if (pattern.test(value)) {
 			alert("包含非法字符!");
@@ -774,8 +776,11 @@
 	 * @param  {[type]} toggle [description]
 	 * @return {[type]}        [description]
 	 */
-	function toggle_login(toggle) {
+	function toggle_login(toggle, register_only) {
 		mask.style['display'] = toggle == "1" ? "block" : "none";
+		for ( switcher of action_switch.children ) {
+			switcher.style.display = "block"
+		}
 		if (toggle == "1") {
 			login_panel.style['transform'] = "translate3d(0, 0, 0)"
 			mask.addEventListener("click", toggle_login)
@@ -783,6 +788,12 @@
 		else {
 			login_panel.style['transform'] = "translate3d(0, -250%, 0)"
 			mask.removeEventListener("click", toggle_login)
+		}
+		if (register_only) {
+			panel_switch("register")
+			for ( switcher of action_switch.children ) {
+				switcher.style.display = "none"
+			}
 		}
 		clear_login()
 	}
@@ -1047,6 +1058,7 @@
 
 	function check_del_state(res) {
 		if ( res['code'] == 0 ) {
+			alert("删除操作执行成功!\n如有需要, 请调整及格线!")
 			render_admin(res['api'])
 		}
 		else {
@@ -1062,7 +1074,7 @@
 	 */
 	function do_action(target, action) {
 		// 我们这里进行分开处理, 由于用户的操作比较多, 并且全部都涉及数据库操作, 因此单独拿出来
-		if ( admin_state == "user" ) {
+		if ( admin_state == "users" ) {
 			do_user_action(target, action)
 		} // 而对于其他的state,比较统一,都是新增(文件上传)和删除(后台删除文件)的操作, 所以放在一起
 		else {
@@ -1092,7 +1104,26 @@
 	 * @return {[type]}        [description]
 	 */
 	function do_user_action(target, action) {
+		// 创建新用户
+		if ( action == "new" ) {
+			toggle_login(1, true)
+		}
+		// 删除用户
+		if ( action == "del" ) {
 
+		}
+		// 冻结用户
+		if ( action == "deactive" ) {
+
+		}
+		// 激活用户
+		if ( action == "active" ) {
+
+		}
+		// 授权用户成为管理员
+		if ( action == "grant" ) {
+
+		}
 	}
 
 })()
