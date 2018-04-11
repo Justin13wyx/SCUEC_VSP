@@ -10,6 +10,8 @@ app = Flask(__name__)
 path = os.path
 prefix = "/apiv1/{}/{}"
 
+machine_id = 1
+
 BASEPATH = "."
 
 # ###############
@@ -25,6 +27,12 @@ BASEPATH = "."
 
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 gen = TimedJSONWebSignatureSerializer(app.secret_key, expires_in=600)
+
+pass_map = {
+    "videos": "videorequire",
+    "instructions": "instructionrequire",
+    "tests": "scorerequire"
+}
 
 
 @app.route("/")
@@ -113,7 +121,7 @@ def push_info():
     truename = db_connector.get_attr("user_info", "username", username, ("truename",)).fetchall()
     result_set = db_connector.get_attr("user_state", "username", username,
                                        ("videopass", "instructionpass", "score", "havetest",)).fetchall()
-    requirement = db_connector.get_attr("machine_requirement", "id", 1,
+    requirement = db_connector.get_attr("machine_requirement", "id", machine_id,
                                         ("videorequire", "instructionrequire", "scorerequire")).fetchall()
     return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
 
@@ -122,8 +130,8 @@ def push_info():
 def after_watching():
     user = request.values.get('username')
     passed = int(request.form['video_pass'])
-    if db_connector.update_attr("user_state", "username", user, videopass=passed):
-        video_require = db_connector.get_attr("machine_requirement", "id", 1, ("videorequire",)).fetchall()[0]
+    if db_connector.update_attr("user_state", "username", user, {"videopass": passed}):
+        video_require = db_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire",)).fetchall()[0]
         return pack_response(0, "ok", finished=passed >= video_require[0])
     return pack_response(-1, "database error")
 
@@ -144,9 +152,10 @@ def after_opening():
             haveread = read_item
         else:
             haveread += ",%s" % read_item
-        if db_connector.update_attr("instruction_record", "username", user, haveread=haveread):
-            require = db_connector.get_attr("machine_requirement", "id", 1, ("instructionrequire",)).fetchall()[0]
-            db_connector.update_attr("user_state", "username", user, instructionpass=len(haveread.split(",")))
+        if db_connector.update_attr("instruction_record", "username", user, {"haveread": haveread}):
+            require = \
+            db_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
+            db_connector.update_attr("user_state", "username", user, {"instructionpass": len(haveread.split(","))})
             return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
         return pack_response(-1, "database error")
 
@@ -229,9 +238,9 @@ def admin_videos():
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "视频名", "大小", "类型"]
     data = []
-    videos = os.listdir(path.join(BASEPATH, "video", "0"))
+    videos = os.listdir(path.join(BASEPATH, "video", str(machine_id)))
     for video in videos:
-        data.append([video, get_size(path.join(BASEPATH, "video", "0", video)), path.splitext(video)[-1]])
+        data.append([video, get_size(path.join(BASEPATH, "video", str(machine_id), video)), path.splitext(video)[-1]])
     return pack_response(0, "ok", title=title, data=data, attr="videos", access=True)
 
 
@@ -242,10 +251,11 @@ def admin_ins():
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "文档名", "大小", "类型"]
     data = []
-    ins = os.listdir(path.join(BASEPATH, "instructions", "0"))
+    ins = os.listdir(path.join(BASEPATH, "instructions", str(machine_id)))
     for instruction in ins:
         data.append(
-            [instruction, get_size(path.join(BASEPATH, "instructions", "0", instruction)), path.splitext(instruction)[-1]]
+            [instruction, get_size(path.join(BASEPATH, "instructions", str(machine_id), instruction)),
+             path.splitext(instruction)[-1]]
         )
     return pack_response(0, "ok", title=title, data=data, attr="instructions", access=True)
 
@@ -256,6 +266,18 @@ def admin_tests():
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "题目", "选项", "答案"]
+
+
+@app.route(prefix.format("admin", "setpass"), methods=['POST'])
+def set_pass():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    passline = request.values.get("passline")
+    state = pass_map[request.values.get("state")]
+    if db_connector.update_attr("machine_requirement", "id", machine_id, {state: passline}):
+        return pack_response(0, "ok")
+    return pack_response(-1, "wrong")
 
 
 def get_token(obj):

@@ -61,7 +61,7 @@ def remove_attr(table, keyword, value):
     conn.commit()
 
 
-def update_attr(table, keyword, value, **kwargs):
+def update_attr(table, keyword, value, kwargs):
     condition = "{}='{}'".format(keyword, value)
     values = []
     for k, v in kwargs.items():
