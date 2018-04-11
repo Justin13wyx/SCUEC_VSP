@@ -60,15 +60,6 @@
 
 	var admin_state = ""
 
-	// window.onload = e => {
-	// 	fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/checkLogin", check_state, null)
-	// }
-
-	// function check_state(res) {
-	// 	console.log(res)
-
-	// }
-
 	// 具体的管理功能事件绑定
 	for ( action_btn of action_btns ) {
 		action_btn.addEventListener("click", e => {
@@ -83,10 +74,11 @@
 				return;
 			}
 			let target = check_target()
-			action(target, action)
+			do_action(target, action)
 		})
 	}
 
+	// 对设置及格线的那个窗口按钮的事件绑定
 	for ( let btn of control_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
@@ -187,6 +179,7 @@
 		do_login_or_register()
 	})
 
+	// 注册登出按钮的点击事件
 	logout_btn.addEventListener("click", e => { logout() })
 
 	// 防止过度后移, 记录当前观看的最大位置
@@ -197,6 +190,7 @@
 		else return
 	}
 
+	// 视频列表的点击事件绑定
 	video_list.addEventListener("click", e => {
 		target = e.target || e.srcElement
 		if ( target.hasAttribute("link") ) {
@@ -215,6 +209,7 @@
 		}
 	})
 
+	// 播放完成之后的回调
 	video.onended = function () {
 		max_viewtime = 0
 		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○")
@@ -228,6 +223,7 @@
 		video_control.children[1].innerHTML = "暂停"
 	}
 
+	// 前进, 暂停播放, 后移的事件绑定
 	video_control.addEventListener('click', e => {
 		e.preventDefault()
 		target = e.target || e.srcElement
@@ -245,6 +241,7 @@
 		}
 	})
 
+	// pdf点击事件绑定
 	pdfs.addEventListener("click", e => {
 		e.preventDefault()
 		pdf = e.target || e.srcElement
@@ -263,6 +260,7 @@
 		}
 	})
 
+	// 开始阅读的事件绑定
 	read_trigger.addEventListener("click", e => {
 		if (selected_pdf) {
 			window.open("http://127.0.0.1:5000/" + selected_pdf)
@@ -274,6 +272,11 @@
 		}
 	})
 
+	/**
+	 * 检查阅读材料的阅读回调
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function check_ins_update(res) {
 		if (res['finished']) {
 			alert("你已经完成说明阅读要求")
@@ -720,7 +723,6 @@
 		return flag;
 	}
 
-
 	/**
 	* 负责切换菜单点击后模块切换的统一接口
 	* @param  {[type]}   e          鼠标点击事件
@@ -861,6 +863,11 @@
 		fetch_data("POST", "http://127.0.0.1:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"))
 	}
 
+	/**
+	 * 检查及格线设置是否成功
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function check_setpass_state(res) {
 		if (res['code'] == 0) {
 			alert("修改成功!")
@@ -870,6 +877,11 @@
 			alert("修改失败!")
 	}
 
+	/**
+	 * toggle及格线输入窗口
+	 * @param  {[type]} toggle [description]
+	 * @return {[type]}        [description]
+	 */
 	function toggle_admin_inputbox(toggle) {
 		admin_input.children.pass.value = ""
 		if ( toggle )
@@ -926,7 +938,7 @@
 		if (action == "users") {
 			main_ele = ""
 			for ( user of res['data'] ) {
-				main_ele += `<tr><td><input type="checkbox" data-name="" class="admin_checkbox"></td>`
+				main_ele += `<tr class="item_row" data-key="${user['info'][1]}"><td><input type="checkbox" data-name="" class="admin_checkbox"></td>`
 				// 先填充前面的用户信息
 				for ( let m = 0; m < user['info'].length; m ++ ) {
 					value = user['info'][m]
@@ -954,7 +966,7 @@
 		}
 		main_ele = ""
 		for ( let item = 0; item < res['data'].length; item ++ ) {
-			main_ele += `<tr><td><input type="checkbox" data-action="" class="admin_checkbox"></td>`
+			main_ele += `<tr class="item_row" data-key="${res['data'][item][0]}"><td><input type="checkbox" data-action="" class="admin_checkbox"></td>`
 			main_ele += `<td>${item+1}</td>`
 			for ( let n = 0; n < res['data'][item].length; n ++ ) {
 				main_ele += `<td>${res['data'][item][n]}</td>`
@@ -972,6 +984,10 @@
 		return;
 	}
 
+	/**
+	 * 绑定勾选框的事件绑定, 是动态绑定的
+	 * @return {[type]} [description]
+	 */
 	function bind_checkbox() {
 		box = document.getElementsByClassName("admin_checkbox_all")[0]
 		boxes = document.getElementsByClassName("admin_checkbox")
@@ -992,15 +1008,90 @@
 		})
 	}
 
+	/**
+	 * 尝试抓取所有的checkbox元素所在的那一行的data-key
+	 * @return {[type]} [description]
+	 */
 	function check_target() {
 		let target = [];
-		boxes = document.getElementsByClassName("admin_checkbox")
+		let boxes = document.getElementsByClassName("admin_checkbox")
 		if ( boxes[0].checked ) {
+			eles = document.getElementsByClassName("item_row")
+			for ( let ele of eles ) {
+				target.push(ele.dataset['key'])
+			}
+		}
+		else {
+			for ( let i = 1; i < boxes.length; i ++ ) {
+				if ( boxes[i].checked ) {
+					target.push(boxes[i].parentElement.parentElement.dataset['key'])
+				}
+			}
+		}
+		return target;
+	}
+
+	/**
+	 * toggle上传页面的窗口
+	 * @param  {[type]} toggle [description]
+	 * @return {[type]}        [description]
+	 */
+	function toggle_upload(toggle) {
+		if ( toggle ) {
+
+		}
+		else {
 
 		}
 	}
 
-	function action(target, action) {
+	function check_del_state(res) {
+		if ( res['code'] == 0 ) {
+			render_admin(res['api'])
+		}
+		else {
+			alert("删除操作执行失败!")
+		}
+	}
+
+	/**
+	 * 执行action代理函数, 由此来召唤不同的函数
+	 * @param  {[type]} target [description]
+	 * @param  {[type]} action [description]
+	 * @return {[type]}        [description]
+	 */
+	function do_action(target, action) {
+		// 我们这里进行分开处理, 由于用户的操作比较多, 并且全部都涉及数据库操作, 因此单独拿出来
+		if ( admin_state == "user" ) {
+			do_user_action(target, action)
+		} // 而对于其他的state,比较统一,都是新增(文件上传)和删除(后台删除文件)的操作, 所以放在一起
+		else {
+			if ( action == "new" ) {
+				toggle_upload(true)
+			}
+			if ( action == "del" ) {
+				if ( confirm("确定删除下面的项目吗?\n" + target) ) {
+					let data = new Map()
+					data.set("token", localStorage.getItem("token"))
+					data.set("username", username)
+					data.set("state", admin_state)
+					data.set("target", target)
+					data = make_data(data)
+					fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/del", check_del_state, data)
+				}
+				else
+					return;
+			}
+		}
+	}
+
+	/**
+	 * 用户操作的执行函数, 新增, 删除, 冻结, 激活和授权
+	 * @param  {[type]} target [description]
+	 * @param  {[type]} action [description]
+	 * @return {[type]}        [description]
+	 */
+	function do_user_action(target, action) {
 
 	}
 

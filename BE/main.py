@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, session, redirect, send_file, abort
+from flask import Flask, request, jsonify, session, redirect, send_file
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 import db_connector
 
@@ -162,25 +162,25 @@ def after_opening():
 
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])
 def push_video_index():
-    videos = os.listdir(path.join(BASEPATH, "video", "0"))
+    videos = os.listdir(path.join(BASEPATH, "videos", str(machine_id)))
     res = []
     for video in videos:
-        res.append([video, path.join("video", "0", video)])
+        res.append([video, path.join("videos", str(machine_id), video)])
     return pack_response(0, "ok", data=res)
 
 
-@app.route("/video/<int:machine_id>/<string:video_name>")
+@app.route("/videos/<int:machine_id>/<string:video_name>")
 def push_video(machine_id, video_name):
-    video_path = path.join(BASEPATH, "video", str(machine_id), video_name)
+    video_path = path.join(BASEPATH, "videos", str(machine_id), video_name)
     return send_file(video_path, mimetype="video/mp4")
 
 
 @app.route(prefix.format("instruction", "getInstructionIndex"), methods=["GET"])
 def push_instruction_index():
-    pdfs = os.listdir(path.join(BASEPATH, "instructions", "0"))
+    pdfs = os.listdir(path.join(BASEPATH, "instructions", str(machine_id)))
     res = []
     for pdf in pdfs:
-        res.append([pdf, path.join("instructions", "0", pdf)])
+        res.append([pdf, path.join("instructions", str(machine_id), pdf)])
     return pack_response(0, "ok", data=res)
 
 
@@ -238,9 +238,9 @@ def admin_videos():
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "视频名", "大小", "类型"]
     data = []
-    videos = os.listdir(path.join(BASEPATH, "video", str(machine_id)))
+    videos = os.listdir(path.join(BASEPATH, "videos", str(machine_id)))
     for video in videos:
-        data.append([video, get_size(path.join(BASEPATH, "video", str(machine_id), video)), path.splitext(video)[-1]])
+        data.append([video, get_size(path.join(BASEPATH, "videos", str(machine_id), video)), path.splitext(video)[-1]])
     return pack_response(0, "ok", title=title, data=data, attr="videos", access=True)
 
 
@@ -260,12 +260,12 @@ def admin_ins():
     return pack_response(0, "ok", title=title, data=data, attr="instructions", access=True)
 
 
-@app.route(prefix.format("admin", "tests"), methods=['POST'])
-def admin_tests():
-    access = verify_token(request.values.get("token"))
-    if access[0] < 0:
-        return pack_response(access[0], access[1], access=False)
-    title = ["ID", "题目", "选项", "答案"]
+# @app.route(prefix.format("admin", "tests"), methods=['POST'])
+# def admin_tests():
+#     access = verify_token(request.values.get("token"))
+#     if access[0] < 0:
+#         return pack_response(access[0], access[1], access=False)
+#     title = ["ID", "题目", "选项", "答案"]
 
 
 @app.route(prefix.format("admin", "setpass"), methods=['POST'])
@@ -278,6 +278,22 @@ def set_pass():
     if db_connector.update_attr("machine_requirement", "id", machine_id, {state: passline}):
         return pack_response(0, "ok")
     return pack_response(-1, "wrong")
+
+
+@app.route(prefix.format("admin", "del"), methods=['POST'])
+def delete_item():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    base_path = path.join(BASEPATH, request.values.get("state"), str(machine_id))
+    items = request.values.get("target").split(",")
+    for item in items:
+        des = path.join(base_path, item)
+        try:
+            os.remove(des)
+        except OSError:
+            return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"))
 
 
 def get_token(obj):
