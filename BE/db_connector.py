@@ -54,11 +54,12 @@ def set_attr(table, keywords, attributes):
     return True
 
 
-def remove_attr(table, keyword, value):
+def remove_attr(table, keyword, value, commit=False):
     condition = "{}='{}'".format(keyword, value)
     sql = del_sql.format(table, condition)
     cursor.execute(sql)
-    conn.commit()
+    if commit:
+        conn.commit()
 
 
 def update_attr(table, keyword, value, kwargs):
@@ -75,6 +76,10 @@ def update_attr(table, keyword, value, kwargs):
         print(e)
         return False
     return True
+
+
+def commit():
+    conn.commit()
 
 
 def trim_comma(field):

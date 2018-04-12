@@ -122,7 +122,20 @@ def logout():
 
 @app.route(prefix.format("user", "delUser"), methods=["POST"])
 def rm_user():
-    pass
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    users2del = request.values.get("targets").split(",")
+    for user in users2del:
+        try:
+            db_connector.remove_attr("user_info", "username", user)  # 删除用户信息
+            db_connector.remove_attr("secret", "username", user)  # 删除用户密码
+            db_connector.remove_attr("user_state", "username", user)  # 删除用户状态信息
+            db_connector.remove_attr("instruction_record", "username", user)  # 删除用户文档阅读信息
+        except (db_connector.IntegrityError, db_connector.OperationalError) as e:
+            return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
+    db_connector.commit()
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"))
 
 
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])

@@ -801,7 +801,7 @@
 			mask.removeEventListener("click", toggle_login)
 		}
 		if (register_only) {
-			panel_switch("register")
+			action_switch.children[0].click() // 点击注册按钮切换
 			for ( switcher of action_switch.children ) {
 				switcher.style.display = "none"
 			}
@@ -1067,6 +1067,11 @@
 		}
 	}
 
+	/**
+	 * 管理通用, 检查删除操作状态的回调函数
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function check_del_state(res) {
 		if ( res['code'] == 0 ) {
 			alert("删除操作执行成功!\n如有需要, 请调整及格线!")
@@ -1121,7 +1126,17 @@
 		}
 		// 删除用户
 		if ( action == "del" ) {
-
+			let target = check_target()
+			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
+				let data = new Map()
+				data.set("token", localStorage.getItem("token"))
+				data.set("targets", target)
+				data.set("user", username)
+				data.set("state", admin_state)
+				data = make_data(data)
+				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/delUser", check_del_state, data)
+			}
+			return;
 		}
 		// 冻结用户
 		if ( action == "deactive" ) {
