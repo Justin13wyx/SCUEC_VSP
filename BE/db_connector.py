@@ -10,7 +10,7 @@ DEACTIVED = 3
 conn = sqlite3.connect("./scuec_vsp", check_same_thread=False)
 cursor = conn.cursor()
 
-IntegerityError = sqlite3.IntegrityError
+IntegrityError = sqlite3.IntegrityError
 OperationalError = sqlite3.OperationalError
 
 get_sql = "SELECT {} FROM {} WHERE {}"
