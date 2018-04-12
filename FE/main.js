@@ -73,8 +73,7 @@
 				toggle_admin_inputbox(true)
 				return;
 			}
-			let target = check_target()
-			do_action(target, action)
+			do_action(action)
 		})
 	}
 
@@ -912,6 +911,18 @@
 			admin_inputbox.style['transform'] = "scale3d(0,0,0)"
 	}
 
+
+	function access_test(res) {
+		if (!res['access']) {
+			if ( res['code'] == -1 )
+				alert("密钥过期! 请重新进入管理页面!")
+			if ( res['code'] == -2 )
+				alert("密钥错误! 请尝试重新登录!")
+			return false;
+		}
+		return true;
+	}
+
 	var desc_area_head = document.getElementsByClassName("desc_area_head")[0];
 	var desc_area_body = document.getElementsByClassName("desc_area_body")[0];
 	/**
@@ -922,13 +933,7 @@
 	function _render_admin(res) {
 		desc_area_head.children[1].innerHTML = ""
 		desc_area_body.children[1].innerHTML = ""
-		if (!res['access']) {
-			if ( res['code'] == -1 )
-				alert("密钥过期! 请重新进入管理页面!")
-			if ( res['code'] == -2 )
-				alert("密钥错误! 请尝试重新登录!")
-			return;
-		}
+		if (!access_test(res)) return;
 		action = res['attr']
 		if (action == "users") {
 			rule = [3, 5, 13, 10, 25, 10, 10, 24]
@@ -982,7 +987,7 @@
 			for ( let btn = 0; btn < action_btns.length; btn ++ ) {
 				action_btns[btn].setAttribute("class", "action_btn")
 			}
-			action_btns[5].setAttribute("class", "action_btn action_disable")
+			action_btns[6].setAttribute("class", "action_btn action_disable")
 			bind_checkbox()
 			return;
 		}
@@ -999,7 +1004,7 @@
 		// 调整上方操作按钮
 		for ( let btn = 0; btn < action_btns.length; btn ++ ) {
 			action_btns[btn].setAttribute("class", "action_btn")
-			if ( btn >= 2 && btn <= 4 )
+			if ( btn >= 2 && btn <= 5 )
 				action_btns[btn].setAttribute("class", "action_btn action_disable")
 		}
 		bind_checkbox()
@@ -1035,22 +1040,22 @@
 	 * @return {[type]} [description]
 	 */
 	function check_target() {
-		let target = [];
+		result = [];
 		let boxes = document.getElementsByClassName("admin_checkbox")
 		if ( boxes[0].checked ) {
 			eles = document.getElementsByClassName("item_row")
 			for ( let ele of eles ) {
-				target.push(ele.dataset['key'])
+				result.push(ele.dataset['key'])
 			}
 		}
 		else {
 			for ( let i = 1; i < boxes.length; i ++ ) {
 				if ( boxes[i].checked ) {
-					target.push(boxes[i].parentElement.parentElement.dataset['key'])
+					result.push(boxes[i].parentElement.parentElement.dataset['key'])
 				}
 			}
 		}
-		return target;
+		return result;
 	}
 
 	/**
@@ -1073,6 +1078,7 @@
 	 * @return {[type]}     [description]
 	 */
 	function check_del_state(res) {
+		if (!access_test(res)) return;
 		if ( res['code'] == 0 ) {
 			alert("删除操作执行成功!\n如有需要, 请调整及格线!")
 			render_admin(res['api'])
@@ -1084,11 +1090,11 @@
 
 	/**
 	 * 执行action代理函数, 由此来召唤不同的函数
-	 * @param  {[type]} target [description]
 	 * @param  {[type]} action [description]
 	 * @return {[type]}        [description]
 	 */
-	function do_action(target, action) {
+	function do_action(action) {
+		target = check_target()
 		// 我们这里进行分开处理, 由于用户的操作比较多, 并且全部都涉及数据库操作, 因此单独拿出来
 		if ( admin_state == "users" ) {
 			do_user_action(target, action)
@@ -1098,6 +1104,10 @@
 				toggle_upload(true)
 			}
 			if ( action == "del" ) {
+				if (target.length == 0) {
+					alert("你还没有选择任何项目!")
+					return;
+				}
 				if ( confirm("确定删除下面的项目吗?\n" + target) ) {
 					let data = new Map()
 					data.set("token", localStorage.getItem("token"))
@@ -1123,33 +1133,69 @@
 		// 创建新用户
 		if ( action == "new" ) {
 			toggle_login(1, true)
+			return;
 		}
+		let data = new Map()
+		target = check_target()
+		if (target.length == 0) {
+			alert("你还没有选择任何用户")
+			return;
+		}
+		data.set("token", localStorage.getItem("token"))
+		data.set("targets", target)
+		data.set("user", username)
+		data.set("state", admin_state)
+		data = make_data(data)
 		// 删除用户
 		if ( action == "del" ) {
-			let target = check_target()
 			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
-				let data = new Map()
-				data.set("token", localStorage.getItem("token"))
-				data.set("targets", target)
-				data.set("user", username)
-				data.set("state", admin_state)
-				data = make_data(data)
 				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/delUser", check_del_state, data)
 			}
 			return;
 		}
 		// 冻结用户
 		if ( action == "deactive" ) {
-
+			if (confirm("是否冻结下面的用户?\n警告⚠️!同时会收回用户的管理员权限!\n\n" + target)) {
+				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/deactiveUser", check_admin_state, data)
+			}
+			return;
 		}
 		// 激活用户
 		if ( action == "active" ) {
-
+			if (confirm("确定激活下面的用户?\n\n" + target)) {
+				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/activeUser", check_admin_state, data)
+			}
+			return;
 		}
 		// 授权用户成为管理员
 		if ( action == "grant" ) {
-
+			if (confirm("确定授权下面的用户?\n警告⚠️!管理员权限很大!\n\n" + target)) {
+				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/grantUser", check_admin_state, data)
+			}
+			return;
+		}
+		// 取消用户授权
+		if ( action == "ungrant" ) {
+			if (confirm("确定对下面的用户收回授权?\n\n" + target)) {
+				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/ungrantUser", check_admin_state, data)
+			}
 		}
 	}
+
+	/**
+	 * 处理管理功能操作的统一处理结果回调函数
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
+	function check_admin_state(res) {
+		if (!access_test(res)) return;
+		render_admin(res['api'])
+		if ( res['code'] == 0 )
+			alert("操作成功!")
+		else
+			alert("操作失败!请稍后重试!")
+	}
+
+
 
 })()

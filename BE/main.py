@@ -1,8 +1,8 @@
+import os
+
+import db_connector
 from flask import Flask, request, jsonify, session, redirect, send_file
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
-import db_connector
-
-import os
 
 # from urllib.parse import unquote
 
@@ -67,7 +67,7 @@ def register():
             access = verify_token(request.values.get("token"))
             if access[0] < 0:
                 return pack_response(access[0], access[1], access=False)
-            return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"))
+            return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
         return pack_response(0, "ok")
     else:
         # 写入失败, 删除用户信息记录, 注册失败
@@ -91,7 +91,7 @@ def login():
     if not user_id:
         # 抓取失败, 不存在用户记录
         return pack_response(2, "user do not exist")
-    if user_id[2] == "0":  # 用户被冻结
+    if user_id[2] == 0:  # 用户被冻结
         return pack_response(3, "user is deactived")
     # 获取该用户的密码
     true_secret = db_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
@@ -132,10 +132,64 @@ def rm_user():
             db_connector.remove_attr("secret", "username", user)  # 删除用户密码
             db_connector.remove_attr("user_state", "username", user)  # 删除用户状态信息
             db_connector.remove_attr("instruction_record", "username", user)  # 删除用户文档阅读信息
-        except (db_connector.IntegrityError, db_connector.OperationalError) as e:
+        except (db_connector.IntegrityError, db_connector.OperationalError):
             return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
     db_connector.commit()
-    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"))
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("user", "activeUser"), methods=["POST"])
+def active_user():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    users2active = request.values.get("targets").split(",")
+    for user in users2active:
+        db_connector.update_attr("user_info", "username", user, {"isactive": 1})
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("user", "deactiveUser"), methods=["POST"])
+def deactive_user():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    users2deactive = request.values.get("targets").split(",")
+    for user in users2deactive:
+        try:
+            db_connector.update_attr("user_info", "username", user, {"isactive": 0})
+            db_connector.update_attr("user_info", "username", user, {"isroot": 0})
+        except (db_connector.OperationalError, db_connector.IntegrityError):
+            return pack_response(-1, "error", api="/admin/%s" % request.values.get("state"))
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("user", "grantUser"), methods=["POST"])
+def grant_user():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    users2grant = request.values.get("targets").split(",")
+    for user in users2grant:
+        try:
+            db_connector.update_attr("user_info", "username", user, {"isroot": 1})
+        except (db_connector.OperationalError, db_connector.IntegrityError):
+            return pack_response(-1, "error", api="/admin/%s" % request.values.get("state"))
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("user", "ungrantUser"), methods=["POST"])
+def ungrant_user():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    users2ungrant = request.values.get("targets").split(",")
+    for user in users2ungrant:
+        try:
+            db_connector.update_attr("user_info", "username", user, {"isroot": 0})
+        except (db_connector.OperationalError, db_connector.IntegrityError):
+            return pack_response(-1, "error", api="/admin/%s" % request.values.get("state"))
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
 
 
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
@@ -177,7 +231,7 @@ def after_opening():
             haveread += ",%s" % read_item
         if db_connector.update_attr("instruction_record", "username", user, {"haveread": haveread}):
             require = \
-            db_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
+                db_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
             db_connector.update_attr("user_state", "username", user, {"instructionpass": len(haveread.split(","))})
             return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
         return pack_response(-1, "database error")
