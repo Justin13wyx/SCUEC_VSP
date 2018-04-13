@@ -155,6 +155,27 @@
 				<button data-action>确定</button>
 			</div>
 		</div>
+		<div id="admin_uploadbox">
+			<p class="title">
+				文件上传
+			</p>
+			<button id="upload_btn" class="upload_control_btn" data-action="choose">
+				选择文件
+			</button>
+			<input id="real_upload" type="file" name="upload" multiple style="display: none;">
+			<div id="preview_area">
+				<!--动态插入-->
+				<!-- <div class="file_item">
+					<span class="file_name">sample.txt</span><span class="upload_state">等待中</span>
+				</div>
+				<div class="file_item">
+					<span class="file_name">sample.txt</span><span class="upload_state">等待中</span>
+				</div> -->
+			</div>
+			<div class="upload_control_area">
+				<button class="upload_control_btn" data-action="cancel">取消</button><button class="upload_control_btn" data-action="upload">上传</button>
+			</div>
+		</div>
 	</section>
 	<script src="main.js"></script>
 </body>

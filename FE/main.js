@@ -26,6 +26,10 @@
 	var control_btns = document.getElementById("admin_control").children;
 	var admin_inputbox = document.getElementById("admin_inputbox");
 	var admin_input = document.getElementById("input_area");
+	var admin_uploadbox = document.getElementById("admin_uploadbox");
+	var admin_upload_btns = document.getElementsByClassName("upload_control_btn");
+	var real_upload = document.getElementById("real_upload")
+	var preview_area = document.getElementById("preview_area");
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -59,6 +63,7 @@
 	var username = "";
 
 	var admin_state = ""
+	var files = null;
 
 	// 具体的管理功能事件绑定
 	for ( action_btn of action_btns ) {
@@ -95,6 +100,20 @@
 				if (confirm("确定设置成" + admin_input.children.pass.value + "?"))
 					fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/setpass", check_setpass_state, data)
 			}
+		})
+	}
+
+	// 上传界面的按钮事件绑定
+	for ( let btn of admin_upload_btns ) {
+		btn.addEventListener("click", e => {
+			e.preventDefault()
+			let action = e.target.dataset['action']
+			if ( action == "choose" )
+				real_upload.click()
+			else if ( action == "cancel" )
+				toggle_upload(false)
+			else if ( action == "upload" )
+				do_upload()
 		})
 	}
 
@@ -270,6 +289,21 @@
 			alert("你还没有选择阅读材料.");
 		}
 	})
+
+	// 选择文件之后的事件绑定
+	real_upload.onchange = function() {
+		illegal_file = check_files(this.files, admin_state)
+		// 存在不合法的文件
+		if (illegal_file) {
+			alert(illegal_file + "类型不合法或者大于200MB, 请重新选择")
+			files = null;
+			return;
+		}
+		else { // 文件类型检查通过
+			render_previewlist(this.files)
+			files = this.files
+		}
+	}
 
 	/**
 	 * 检查阅读材料的阅读回调
@@ -482,7 +516,7 @@
 	}
 
 	/**
-	* 向服务端请求的统一接口函数. ( 核心函数 )
+	* 向服务端请求的统一接口函数
 	* @param  {[type]}   method   Ajax方法
 	* @param  {[type]}   url      请求的接口地址
 	* @param  {Function} callback 收到请求的回调函数
@@ -1065,10 +1099,12 @@
 	 */
 	function toggle_upload(toggle) {
 		if ( toggle ) {
-
+			admin_uploadbox.style['transform'] = "scale3d(1,1,1)"
 		}
 		else {
-
+			files = null;
+			preview_area.innerHTML = ""
+			admin_uploadbox.style['transform'] = "scale3d(0,0,0)"
 		}
 	}
 
@@ -1194,6 +1230,33 @@
 			alert("操作成功!")
 		else
 			alert("操作失败!请稍后重试!")
+	}
+
+	function check_files(filelist, state) {
+		type = ""
+		if ( state == "videos" ) {
+			type = "video/mp4"
+		}
+		else if ( state == "instructions" ) {
+			type = "application/pdf"
+		}
+		for ( let file of filelist ) {
+			if ( file.type !== type ) return file.name
+			if ( file.size >= 209715200 ) return file.name // 文件大于200MB, 拒绝
+		}
+		return false
+	}
+
+	function render_previewlist(filelist) {
+		html = ""
+		for ( let file of filelist ) {
+			html += `<div class="file_item"><span class="file_name">${file.name}</span><span class="upload_state upload_pending">等待中</span></div>`
+		}
+		preview_area.innerHTML = html
+	}
+
+	function do_upload() {
+		console.log(files)
 	}
 
 

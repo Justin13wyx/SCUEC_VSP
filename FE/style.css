@@ -159,7 +159,7 @@ header > #navigator {
 
 #desc_area {
 	flex: 2;
-	overflow: scroll;
+	overflow: auto;
 	align-self: stretch;
 }
 
@@ -645,4 +645,76 @@ footer > #copyright {
 	background-color: #aaa;
 	color: #eee;
 	font-size: 16px;
+}
+
+#admin_uploadbox {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 400px;
+	height: 500px;
+	margin: -260px 0 0 -210px;
+	border-radius: 10px;
+	background-color: #eee;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	padding: 20px;
+	transform: scale3d(0,0,0);
+	transition: all 0.3s;
+}
+
+#admin_uploadbox > .title {
+	font-size: 30px;
+	font-weight: bold;
+	align-self: stretch;
+}
+
+.upload_control_btn {
+	width: 80px;
+	height: 30px;
+	color: #fff;
+	background-color: rgb(156, 161, 171);
+	border-radius: 10px;
+	box-shadow: 1px 1px 3px #aaa;
+	cursor: pointer;
+	border: none;
+	box-sizing: border-box;
+	transition: all 0.3s;
+}
+
+#admin_uploadbox > #upload_btn {
+	margin: 30px 0;
+	align-self: stretch;
+}
+
+.upload_control_btn:hover {
+	color: #444;
+	background-color: rgb(216, 221, 221);
+	border: 1px solid rgb(191, 200, 211);
+}
+
+.upload_control_area {
+	align-self: stretch;
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	align-items: center;
+}
+
+
+#admin_uploadbox > #preview_area {
+	width: 100%;
+	height: 100%;
+	border: 1px solid #aaa;
+	border-radius: 10px;
+	overflow: auto;
+	align-self: stretch;
+}
+
+#admin_uploadbox > #preview_area > .file_item {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	padding: 10px 5px;
 }
