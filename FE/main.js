@@ -64,6 +64,7 @@
 
 	var admin_state = ""
 	var files = null;
+	var send_queue = [];
 
 	// 具体的管理功能事件绑定
 	for ( action_btn of action_btns ) {
@@ -113,7 +114,7 @@
 			else if ( action == "cancel" )
 				toggle_upload(false)
 			else if ( action == "upload" )
-				do_upload()
+				do_upload(e.target)
 		})
 	}
 
@@ -398,6 +399,7 @@
 		haveseen = res.userstate[0]
 		max_view = haveseen
 		tokens = document.getElementsByClassName("seen_token")
+		if ( tokens.length == 0 ) return;
 		for (let i = 0; i < haveseen; i ++) {
 			tokens[i].innerHTML = "√"
 		}
@@ -525,7 +527,7 @@
 	*/
 	function fetch_data(method, url, callback, data, error_callback) {
 		toggle_loading(1)
-		var xhr = new XMLHttpRequest();
+		let xhr = new XMLHttpRequest();
 		xhr.open(method, url);
 		xhr.timeout = 9000;
 		if (method === "POST") {
@@ -1103,7 +1105,8 @@
 		}
 		else {
 			files = null;
-			preview_area.innerHTML = ""
+			if ( send_queue.length == 0 )
+				preview_area.innerHTML = ""
 			admin_uploadbox.style['transform'] = "scale3d(0,0,0)"
 		}
 	}
@@ -1250,15 +1253,74 @@
 	function render_previewlist(filelist) {
 		html = ""
 		for ( let file of filelist ) {
-			html += `<div class="file_item"><span class="file_name">${file.name}</span><span class="upload_state upload_pending">等待中</span></div>`
+			html += `<div class="file_item"><span class="file_name">${file.name}</span><span class="upload_state">等待中</span></div>`
 		}
 		preview_area.innerHTML = html
 	}
 
-	function do_upload() {
-		console.log(files)
+	function do_upload(btn) {
+		btn.setAttribute("disabled", "disabled")
+		admin_upload_btns[0].setAttribute("disabled", "disabled")
+		let labels = document.getElementsByClassName("upload_state");
+		for ( let i = 0; i < labels.length; i ++ ) {
+			upload_file(files[i], labels[i])
+		}
+		files = null;
+		btn.removeAttribute("disabled")
 	}
 
+	function upload_file(file, label) {
+		let xhr = new XMLHttpRequest();
+		let reader = new FileReader();
+		xhr.open("POST", `http://127.0.0.1:5000/apiv1/admin/upload?state=${admin_state}&token=${localStorage.getItem("token")}&filename=${file.name}`, true);
+		reader.onerror = function (e) {
+			label.innerHTML = "读取失败"
+		}
+		reader.onload = function (e) {
+			label.innerHTML = "读取完成"
+			// 读取完成, 加入到发送队列当中, 然后开始串行发送
+			send_queue.push([xhr, new Uint8Array(reader.result)])
+			if ( send_queue.length == preview_area.childElementCount ) {
+				_upload()
+			}
+		}
+		reader.readAsArrayBuffer(file)
+		xhr.onerror = function (e) {
+			console.log(xhr.status + "<->" + xhr.statusText);
+			// 渲染列表
+			label.innerHTML = "上传失败"
+		};
+		xhr.upload.onprogress = function (e) {
+			let percent = Math.floor((e.loaded / e.total)*100)
+			label.innerHTML = `上传中 ${percent}%`
+			if ( percent == 100 ) {
+				label.innerHTML = "上传完成"
+			}
+		}
+		xhr.onreadystatechange = function () {
+			if (xhr.readyState == 4 && xhr.status == 200) {
+				try {
+					let res = JSON.parse(xhr.response);
+					if (!access_test(res)) return;
+					render_admin(res['api'])
+					_upload()
+				} catch (e) {
+					alert("错误! 后台结果异常(000J)");
+				}
+			}
+		};
+	}
+
+	function _upload() {
+		if ( send_queue == 0 ) {
+			admin_upload_btns[0].removeAttribute("disabled")
+			alert("文件全部上传结束!")
+			toggle_upload(false)
+			return;
+		}
+		let sender = send_queue.shift()
+		sender[0].send(sender[1])
+	}
 
 
 })()

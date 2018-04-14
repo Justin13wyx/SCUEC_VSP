@@ -1,7 +1,7 @@
 import os
 
 import db_connector
-from flask import Flask, request, jsonify, session, redirect, send_file
+from flask import Flask, request, jsonify, session, redirect, send_file, make_response
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 
 # from urllib.parse import unquote
@@ -9,6 +9,7 @@ from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, Signatur
 app = Flask(__name__)
 path = os.path
 prefix = "/apiv1/{}/{}"
+allowed_extension = [".mp4", ".pdf"]
 
 machine_id = 1
 
@@ -370,7 +371,24 @@ def delete_item():
             os.remove(des)
         except OSError:
             return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
-    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"))
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("admin", "upload"), methods=['OPTIONS', 'POST'])
+def receive_files():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    if request.method == "OPTIONS":
+        res = make_response()
+        res.headers['Access-Control-Allow-Origin'] = "*"
+        return res
+    dest = path.join(BASEPATH, request.values.get("state"), str(machine_id))
+    raw_data = request.get_data()
+    filename = request.values.get("filename")
+    with open(path.join(dest, filename), mode="wb") as f:
+        f.write(raw_data)
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
 
 
 def get_token(obj):
