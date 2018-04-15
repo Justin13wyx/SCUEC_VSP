@@ -66,12 +66,37 @@
 		</section>
 		<section class="view" id="test_area">
 			<!-- 测试区域 -->
-			<div></div>
-			<button>提交答案</button>
+			<div id="question_section">
+				<div class="question_item">
+					<div class="question_title">
+						<p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sunt deleniti mollitia, assumenda ipsum quae optio praesentium dolorem a nobis qui doloremque aliquid dicta, aut incidunt exercitationem provident ab hic consectetur.</p>
+					</div>
+					<div class="question_radio">
+						<p>
+							<input type="radio">
+							<label>A.xuanxianbgA</label>
+						</p><p>
+							<input type="radio">
+							<label>B.</label>
+						</p><p>
+							<input type="radio">
+							<label>C.</label>
+						</p><p>
+							<input type="radio">
+							<label>D.</label>
+						</p>
+					</div>
+				</div>
+			</div>
+			<!--  -->
+			<div class="test_control_area">
+				<button class="op_btn" data-action="erase">清空作答</button>
+				<button class="op_btn" data-action="submit">提交答案</button>
+			</div>
 		</section>
 	</main>
 	<footer>
-		<p id="copyright">版权所有© 2016 中南民族大学 鄂ICP备05003346号 武汉市洪山区民族大道182号 邮编 430074</p>
+		<p id="copyright">版权所有© 2018 中南民族大学 鄂ICP备05003346号 武汉市洪山区民族大道182号 邮编 430074</p>
 	</footer>
 	<div id="bg"></div>
 	<div id="mask"></div>
@@ -168,6 +193,19 @@
 			</div>
 			<div class="upload_control_area">
 				<button class="upload_control_btn" data-action="cancel">取消</button><button class="upload_control_btn" data-action="upload">上传</button>
+			</div>
+		</div>
+		<div id="admin_questionbox">
+			<p class="title">
+				试题录入
+			</p>
+			<div id="input_area">
+				<textarea id="manual_question" placeholder=""></textarea>
+			</div>
+			<div class="control_area">
+				<button class="control_btn" data-action="cancel">取消</button>
+				<button class="control_btn" data-action="confirm">确定</button>
+				<button class="control_btn" data-action="switch">切换文件上传</button>
 			</div>
 		</div>
 	</section>

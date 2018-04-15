@@ -30,6 +30,9 @@
 	var admin_upload_btns = document.getElementsByClassName("upload_control_btn");
 	var real_upload = document.getElementById("real_upload")
 	var preview_area = document.getElementById("preview_area");
+	var question_box = document.getElementById("admin_questionbox")
+	var question_btns = document.getElementsByClassName("control_btn");
+	var question_input = document.getElementById("manual_question")
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -70,11 +73,12 @@
 	for ( action_btn of action_btns ) {
 		action_btn.addEventListener("click", e => {
 			e.preventDefault()
-			if (e.target.getAttribute("class").match("action_disable")) {
+			let t = e.target || e.srcElement
+			if (t.getAttribute("class").match("action_disable")) {
 				alert("功能不可用!")
 				return;
 			}
-			let action = e.target.dataset['action']
+			let action = t.dataset['action']
 			if ( action == "setpass" ) {
 				toggle_admin_inputbox(true)
 				return;
@@ -87,7 +91,8 @@
 	for ( let btn of control_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
-			let action = e.target.dataset['action']
+			let t = e.target || e.srcElement
+			let action = t.dataset['action']
 			if ( action == "cancel" )
 				toggle_admin_inputbox(false)
 			else {
@@ -104,11 +109,24 @@
 		})
 	}
 
+	// 手动录入题目的窗口取消和确定按钮事件绑定
+	for ( let btn of question_btns ) {
+		btn.addEventListener("click", e => {
+			e.preventDefault()
+			let t = e.target || e.srcElement
+			let action = t.dataset['action']
+			if ( action == "cancel" ) toggle_new_question(false)
+			else if ( action == "confirm" ) confirm_new_question()
+			else if ( action == "switch" ) switch_questionbox()
+		})
+	}
+
 	// 上传界面的按钮事件绑定
 	for ( let btn of admin_upload_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
-			let action = e.target.dataset['action']
+			let t = e.target || e.srcElement
+			let action = t.dataset['action']
 			if ( action == "choose" )
 				real_upload.click()
 			else if ( action == "cancel" )
@@ -216,6 +234,9 @@
 			// 检查是否跳跃观看了
 			if (checkplaying(e.target)) {
 				max_viewtime = 0
+				if ( video.children[0].getAttribute("src") == e.target.getAttribute("link")) {
+					return; // 如果点的就是当前正在播放的, 直接返回
+				}
 				video.children[0].setAttribute("src", e.target.getAttribute("link"))
 				video.load()
 				for ( node of video_list.children[0].children) {
@@ -471,7 +492,15 @@
 	 * @return {[type]} [description]
 	 */
 	function fetch_questions() {
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/test/getQuestions?mac_id=1", render_questions)
+	}
 
+	function render_questions(res) {
+		if ( res['code'] == -1 ) {
+			alert("抓取后台题库错误!")
+			return;
+		}
+		console.log(res)
 	}
 
 	/**
@@ -1140,6 +1169,10 @@
 		} // 而对于其他的state,比较统一,都是新增(文件上传)和删除(后台删除文件)的操作, 所以放在一起
 		else {
 			if ( action == "new" ) {
+				if ( admin_state == "tests" ) {
+					toggle_new_question(true)
+					return;
+				}
 				toggle_upload(true)
 			}
 			if ( action == "del" ) {
@@ -1235,6 +1268,12 @@
 			alert("操作失败!请稍后重试!")
 	}
 
+	/**
+	 * 简单的前端文件后缀检查和大小check
+	 * @param  {[type]} filelist [description]
+	 * @param  {[type]} state    [description]
+	 * @return {[type]}          [description]
+	 */
 	function check_files(filelist, state) {
 		type = ""
 		if ( state == "videos" ) {
@@ -1250,6 +1289,11 @@
 		return false
 	}
 
+	/**
+	 * 渲染文件上传列表
+	 * @param  {[type]} filelist [description]
+	 * @return {[type]}          [description]
+	 */
 	function render_previewlist(filelist) {
 		html = ""
 		for ( let file of filelist ) {
@@ -1258,6 +1302,11 @@
 		preview_area.innerHTML = html
 	}
 
+	/**
+	 * 上传的任务提交函数, 并不真正执行上传
+	 * @param  {[type]} btn [description]
+	 * @return {[type]}     [description]
+	 */
 	function do_upload(btn) {
 		btn.setAttribute("disabled", "disabled")
 		admin_upload_btns[0].setAttribute("disabled", "disabled")
@@ -1269,6 +1318,13 @@
 		btn.removeAttribute("disabled")
 	}
 
+	/**
+	 * 文件上传的函数, 使用FileReader API将文件读取成为二进制流发送
+	 * 会先发送一个OPTIONS请求使用POST
+	 * @param  {[type]} file  [description]
+	 * @param  {[type]} label [description]
+	 * @return {[type]}       [description]
+	 */
 	function upload_file(file, label) {
 		let xhr = new XMLHttpRequest();
 		let reader = new FileReader();
@@ -1311,6 +1367,10 @@
 		};
 	}
 
+	/**
+	 * 文件上传的类消息队列实现, 很蠢的
+	 * @return {[type]} [description]
+	 */
 	function _upload() {
 		if ( send_queue == 0 ) {
 			admin_upload_btns[0].removeAttribute("disabled")
@@ -1320,6 +1380,84 @@
 		}
 		let sender = send_queue.shift()
 		sender[0].send(sender[1])
+	}
+
+	/**
+	 * toggle手动录入题目窗口
+	 * @param  {[type]} toggle [description]
+	 * @return {[type]}        [description]
+	 */
+	function toggle_new_question(toggle) {
+		if (toggle) {
+			let holder = 
+`目前仅支持选择题型, 需按照下面格式进行添加(批量上传同参考此格式):
+
+1.这是一个题目, 题目不要换行.
+A 选项和选项内容使用一个空格进行分隔
+B 这是选项B, 错误答案
+*C 这是选项C, 这是正确答案
+D 这是选项D, 错误答案
+
+2.不同题目之间使用一个空行进行分割.
+*A 选项和选项内容使用一个空格进行分隔
+*B 这是选项B, 这一题选A和选B都对`
+			question_input.value = ""
+			question_input.setAttribute("placeholder", holder)
+			question_box.style['transform'] = "scale3d(1,1,1)"
+		}
+		else {
+			question_box.style['transform'] = "scale3d(0,0,0)"
+		}
+	}
+
+	/**
+	 * 解析用户输入的文本串并且返回数据结构层试题
+	 * @return {[type]} [description]
+	 */
+	function check_struct() {
+		let result = []
+		let raw_data = question_input.value
+		let questions = raw_data.split(/\n\n|\r\r|\r\n\r\n/)
+		for ( let q of questions ) {
+			result.push(q.split("\n"))
+		}
+		return result
+	}
+
+	/**
+	 * 执行一系列的确定和上传工作
+	 * @return {[type]} [description]
+	 */
+	function confirm_new_question() {
+		let question_data = check_struct()
+		if ( question_data.length == 0 ) {
+			alert("试题格式有问题或者长度为0!")
+			return;
+		}
+		console.log(question_data)
+		// 发送data
+		// 
+	}
+
+	function switch_questionbox() {
+		toggle_new_question(false)
+		toggle_upload(true)
+	}
+
+	/**
+	 * 选择选项的点击事件绑定函数, 由于是动态生成的, 因此采用lazy绑定的模式啦
+	 * @param  {[type]} radio [description]
+	 * @return {[type]}       [description]
+	 */
+	function bind_radio(radio) {
+		radio.addEventListener("click", e => {
+			let t = e.target || e.srcElement
+			let block = t.parentElement.parentElement
+			for ( let p of block.children ) {
+				p.children[0].checked = false
+			}
+			t.checked = true
+		})
 	}
 
 
