@@ -4,27 +4,14 @@ import db_connector
 from flask import Flask, request, jsonify, session, redirect, send_file, make_response
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 
-# from urllib.parse import unquote
-
 app = Flask(__name__)
 path = os.path
+
 prefix = "/apiv1/{}/{}"
-allowed_extension = [".mp4", ".pdf"]
+allowed_extension = [".mp4", ".pdf", ".txt"]
 
 machine_id = 1
-
 BASEPATH = "."
-
-# ###############
-# 为管理员设计的接口
-# ###############
-#
-# 用户信息检索和成绩查看
-# 介绍信息更改
-# 视频管理(上传和删除)
-# 说明文档管理(上传和删除)
-# 测评题目上传编辑, 答案修改
-# ###############
 
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
 gen = TimedJSONWebSignatureSerializer(app.secret_key, expires_in=600)
@@ -35,10 +22,7 @@ pass_map = {
     "tests": "scorerequire"
 }
 
-
-@app.route("/")
-def index():
-    return redirect("http://127.0.0.1:8080/%E5%AE%9E%E9%AA%8C%E5%AE%A4%E9%A1%B9%E7%9B%AE/FE/")
+main_connector = db_connector.DBConnector("./scuec_vsp")
 
 
 @app.route(prefix.format("user", "doSignin"), methods=["POST"])
@@ -48,20 +32,20 @@ def register():
     info_keys = list(user_info.keys())
     info_values = list(user_info.values())
     try:
-        result = db_connector.set_attr("user_info", tuple(info_keys[:3]), tuple(info_values[:3]))  # 设置用户信息
+        result = main_connector.set_attr("user_info", tuple(info_keys[:3]), tuple(info_values[:3]))  # 设置用户信息
     except db_connector.IntegrityError as error:
         if "UNIQUE" in error and "username" in error:
             return pack_response(-4, "duplicate username")
         return pack_response(-1, "database written failed!")
     if result:
         # 用户信息设置成功, 设置密码记录
-        result = db_connector.set_attr("secret", ("username", info_keys[3],),
+        result = main_connector.set_attr("secret", ("username", info_keys[3],),
                                        (user_info['username'], db_connector.hash_passwd(info_values[3]),))
     if result:
         # 初始化用户状态
-        result = db_connector.set_attr("user_state", ("username",), (user_info['username'],))
+        result = main_connector.set_attr("user_state", ("username",), (user_info['username'],))
     if result:
-        result = db_connector.set_attr("instruction_record", ("username", "haveread",), (user_info['username'], "",))
+        result = main_connector.set_attr("instruction_record", ("username", "haveread",), (user_info['username'], "",))
     if result:
         # 设置都成功, 注册成功, 如果是从admin页面来的, 就加上一个api的参数
         if request.values.get("token"):
@@ -72,10 +56,10 @@ def register():
         return pack_response(0, "ok")
     else:
         # 写入失败, 删除用户信息记录, 注册失败
-        db_connector.remove_attr("user_info", "username", user_info['username'])
-        db_connector.remove_attr("secret", "username", user_info['username'])
-        db_connector.remove_attr("user_state", "username", user_info['username'])
-        db_connector.remove_attr("instruction_record", "username", user_info['username'])
+        main_connector.remove_attr("user_info", "username", user_info['username'])
+        main_connector.remove_attr("secret", "username", user_info['username'])
+        main_connector.remove_attr("user_state", "username", user_info['username'])
+        main_connector.remove_attr("instruction_record", "username", user_info['username'])
         return pack_response(-1, "database written failed!")
 
 
@@ -85,7 +69,7 @@ def login():
     username = login_info['username']
     # 哈希传过来的密码
     secret = db_connector.hash_passwd(login_info['secret'])
-    user_id = db_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
+    user_id = main_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
     if username in session:  # 如果在会话中, 直接确认
         return pack_response(0, "ok", username=username, root=user_id[1])
     # 数据库尝试抓取用户ID
@@ -95,7 +79,7 @@ def login():
     if user_id[2] == 0:  # 用户被冻结
         return pack_response(3, "user is deactived")
     # 获取该用户的密码
-    true_secret = db_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
+    true_secret = main_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
     if true_secret == secret:  # 密码匹配, 登陆成功
         session['username'] = username
         res = pack_response(0, "ok", username=username, root=user_id[1])
@@ -103,16 +87,6 @@ def login():
         return res
     else:
         return pack_response(1, "wrong password")
-
-
-# @app.route(prefix.format("user", "checkLogin"), methods=["GET"])
-# def check_login_state():
-#     if 'session' not in request.cookies:
-#         return pack_response(5, "haven't login")
-#     if request.cookies['session'] in session:
-#         return pack_response(0, "ok", username=session['username'])
-#     else:
-#         return pack_response(5, "haven't login")
 
 
 @app.route(prefix.format("user", "doLogout"), methods=["POST"])
@@ -129,13 +103,13 @@ def rm_user():
     users2del = request.values.get("targets").split(",")
     for user in users2del:
         try:
-            db_connector.remove_attr("user_info", "username", user)  # 删除用户信息
-            db_connector.remove_attr("secret", "username", user)  # 删除用户密码
-            db_connector.remove_attr("user_state", "username", user)  # 删除用户状态信息
-            db_connector.remove_attr("instruction_record", "username", user)  # 删除用户文档阅读信息
+            main_connector.remove_attr("user_info", "username", user)  # 删除用户信息
+            main_connector.remove_attr("secret", "username", user)  # 删除用户密码
+            main_connector.remove_attr("user_state", "username", user)  # 删除用户状态信息
+            main_connector.remove_attr("instruction_record", "username", user)  # 删除用户文档阅读信息
         except (db_connector.IntegrityError, db_connector.OperationalError):
             return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
-    db_connector.commit()
+    main_connector.commit()
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
 
 
@@ -146,7 +120,7 @@ def active_user():
         return pack_response(access[0], access[1], access=False)
     users2active = request.values.get("targets").split(",")
     for user in users2active:
-        db_connector.update_attr("user_info", "username", user, {"isactive": 1})
+        main_connector.update_attr("user_info", "username", user, {"isactive": 1})
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
 
 
@@ -158,8 +132,8 @@ def deactive_user():
     users2deactive = request.values.get("targets").split(",")
     for user in users2deactive:
         try:
-            db_connector.update_attr("user_info", "username", user, {"isactive": 0})
-            db_connector.update_attr("user_info", "username", user, {"isroot": 0})
+            main_connector.update_attr("user_info", "username", user, {"isactive": 0})
+            main_connector.update_attr("user_info", "username", user, {"isroot": 0})
         except (db_connector.OperationalError, db_connector.IntegrityError):
             return pack_response(-1, "error", api="/admin/%s" % request.values.get("state"))
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
@@ -173,7 +147,7 @@ def grant_user():
     users2grant = request.values.get("targets").split(",")
     for user in users2grant:
         try:
-            db_connector.update_attr("user_info", "username", user, {"isroot": 1})
+            main_connector.update_attr("user_info", "username", user, {"isroot": 1})
         except (db_connector.OperationalError, db_connector.IntegrityError):
             return pack_response(-1, "error", api="/admin/%s" % request.values.get("state"))
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
@@ -187,7 +161,7 @@ def ungrant_user():
     users2ungrant = request.values.get("targets").split(",")
     for user in users2ungrant:
         try:
-            db_connector.update_attr("user_info", "username", user, {"isroot": 0})
+            main_connector.update_attr("user_info", "username", user, {"isroot": 0})
         except (db_connector.OperationalError, db_connector.IntegrityError):
             return pack_response(-1, "error", api="/admin/%s" % request.values.get("state"))
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
@@ -196,10 +170,10 @@ def ungrant_user():
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
     username = unquote(request.values.get("username"))
-    truename = db_connector.get_attr("user_info", "username", username, ("truename",)).fetchall()
-    result_set = db_connector.get_attr("user_state", "username", username,
+    truename = main_connector.get_attr("user_info", "username", username, ("truename",)).fetchall()
+    result_set = main_connector.get_attr("user_state", "username", username,
                                        ("videopass", "instructionpass", "score", "havetest",)).fetchall()
-    requirement = db_connector.get_attr("machine_requirement", "id", machine_id,
+    requirement = main_connector.get_attr("machine_requirement", "id", machine_id,
                                         ("videorequire", "instructionrequire", "scorerequire")).fetchall()
     return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
 
@@ -208,8 +182,8 @@ def push_info():
 def after_watching():
     user = request.values.get('username')
     passed = int(request.form['video_pass'])
-    if db_connector.update_attr("user_state", "username", user, {"videopass": passed}):
-        video_require = db_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire",)).fetchall()[0]
+    if main_connector.update_attr("user_state", "username", user, {"videopass": passed}):
+        video_require = main_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire",)).fetchall()[0]
         return pack_response(0, "ok", finished=passed >= video_require[0])
     return pack_response(-1, "database error")
 
@@ -218,7 +192,7 @@ def after_watching():
 def after_opening():
     user = request.values.get("username")
     read_item = request.form['ins']
-    haveread = db_connector.get_attr("instruction_record", "username", user, ("haveread",)).fetchall()
+    haveread = main_connector.get_attr("instruction_record", "username", user, ("haveread",)).fetchall()
     if haveread:
         haveread = haveread[0][0]
     else:
@@ -230,10 +204,10 @@ def after_opening():
             haveread = read_item
         else:
             haveread += ",%s" % read_item
-        if db_connector.update_attr("instruction_record", "username", user, {"haveread": haveread}):
+        if main_connector.update_attr("instruction_record", "username", user, {"haveread": haveread}):
             require = \
-                db_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
-            db_connector.update_attr("user_state", "username", user, {"instructionpass": len(haveread.split(","))})
+                main_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
+            main_connector.update_attr("user_state", "username", user, {"instructionpass": len(haveread.split(","))})
             return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
         return pack_response(-1, "database error")
 
@@ -273,7 +247,19 @@ def push_instruction(machine_id, instruction):
 
 @app.route(prefix.format("test", "getQuestions"), methods=['GET'])
 def push_questions():
-    pass
+    mac_id = request.args.get("mac_id")
+    target = path.join(BASEPATH, "tests", mac_id, "questions")
+    # try:
+    #     fp = open(target, "r", encoding="utf-8")
+    #     content = fp.read()
+    # except OSError as ex:
+    #     print(e)
+    #     return pack_response(-1, "Error")
+    # fp.close()
+    # questions = content.split("\n\n")  # 这里是一个每一个题目组成的列表
+    # for question in questions:
+    #     ques_item = question.split("\n")
+    # print(questions)
 
 
 @app.route(prefix.format("test", "uploadAnswers"), methods=['POST'])
@@ -284,7 +270,7 @@ def check_answers():
 @app.route(prefix.format("admin", "getToken"), methods=['POST'])
 def validate_user():
     user = request.values.get("username")
-    access = db_connector.get_attr("user_info", "username", user, ("isroot", "isactive",)).fetchall()[0]
+    access = main_connector.get_attr("user_info", "username", user, ("isroot", "isactive",)).fetchall()[0]
     if access[0] == 0:
         return pack_response(233, "No access", access=False)
     if access[1] == 0:
@@ -300,9 +286,9 @@ def admin_users():
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "用户名", "真实姓名", "邮箱", "是管理员", "是否激活", "用户状态"]
     data = []
-    info = db_connector.get_all("user_info").fetchall()
-    state = db_connector.get_all("user_state").fetchall()
-    require = db_connector.get_all("machine_requirement").fetchall()[0][1:]
+    info = main_connector.get_all("user_info").fetchall()
+    state = main_connector.get_all("user_state").fetchall()
+    require = main_connector.get_all("machine_requirement").fetchall()[0][1:]
     for k, v in zip(info, state):
         tmp = {"info": k, "state": v[2:]}
         data.append(tmp)
@@ -338,12 +324,15 @@ def admin_ins():
     return pack_response(0, "ok", title=title, data=data, attr="instructions", access=True)
 
 
-# @app.route(prefix.format("admin", "tests"), methods=['POST'])
-# def admin_tests():
-#     access = verify_token(request.values.get("token"))
-#     if access[0] < 0:
-#         return pack_response(access[0], access[1], access=False)
-#     title = ["ID", "题目", "选项", "答案"]
+@app.route(prefix.format("admin", "tests"), methods=['POST'])
+def admin_tests():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    title = ["ID", "题目", "选项", "答案"]
+    data = []
+
+    return pack_response(0, "ok", title=title, data=data, attr="tests", access=True)
 
 
 @app.route(prefix.format("admin", "setpass"), methods=['POST'])
@@ -353,7 +342,7 @@ def set_pass():
         return pack_response(access[0], access[1], access=False)
     passline = request.values.get("passline")
     state = pass_map[request.values.get("state")]
-    if db_connector.update_attr("machine_requirement", "id", machine_id, {state: passline}):
+    if main_connector.update_attr("machine_requirement", "id", machine_id, {state: passline}):
         return pack_response(0, "ok")
     return pack_response(-1, "wrong")
 
