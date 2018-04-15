@@ -78,6 +78,10 @@ class DBConnector:
     def commit(self):
         self.conn.commit()
 
+    def destroy(self):
+        self.cursor.close()
+        self.conn.close()
+
 
 def trim_comma(field):
     if len(field) == 1:
@@ -85,9 +89,6 @@ def trim_comma(field):
     else:
         attr = str(field)
     return attr
-
-
-
 
 
 def hash_passwd(secret):
