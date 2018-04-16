@@ -58,6 +58,7 @@
 	var maskmask = document.getElementById("mask_for_mask");
 	var logout_btn = document.getElementById("logout_btn");
 	var tooltip = document.getElementById("user_tooltip");
+	
 
 	var canvas = document.getElementById("loading_token");
 	var context = canvas.getContext('2d');
@@ -89,6 +90,8 @@
 			do_action(action)
 		})
 	}
+
+	
 
 	// 对设置及格线的那个窗口按钮的事件绑定
 	for ( let btn of control_btns ) {
@@ -668,7 +671,7 @@
 					form.set(login_panel.children[i].name, login_panel.children[i].value)
 				}
 				else  {
-					// login_panel.children[i].value = ""
+					login_panel.children[i].value = ""
 					return;
 				}
 			}
@@ -721,6 +724,7 @@
 			// 注册成功
 			// admin特例处理
 			if ( res['api'] ) {
+				toggle_login(0)
 				render_admin(res['api'])
 				return;
 			}
@@ -970,7 +974,11 @@
 	 */
 	function fill_user_info(res) {
 		mask.style['display'] = "block"
-		tooltip.children[0].innerHTML = "你好," + res['truename']
+		tooltip.children[0].innerHTML = `你好,${res['truename']}<span id="cancel_tooltip">✘</span>`
+		let cancel_tooltip = document.getElementById("cancel_tooltip");
+		cancel_tooltip.addEventListener("click", e => {
+			toggle_tooltip(0)
+		})
 		for (let i = 0; i < items.length; i ++) {
 			items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
 		}
@@ -1103,7 +1111,7 @@
 				if ( user['state'][3] == 0 ) 
 					main_ele += "<p>尚未参加测评</p></div>"
 				else
-					main_ele += `<p>${user['state'][2]}/${res['require'][2]}<p></div>`
+					main_ele += `<p>测评成绩: ${user['state'][2]}/${res['require'][2]}<p></div>`
 				main_ele += `</tr>`
 			}
 			desc_area_body.children[1].innerHTML = main_ele
@@ -1554,16 +1562,46 @@ D 这是选项D, 错误答案
 				}
 				user_pack.push(tmp)
 			}
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/test/uploadAnswers", check_answers, "answers=" + user_pack)
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/test/uploadAnswers?user=" + username, check_answers, "answers=" + user_pack)
 		}
 	}
 
 	function check_answers(res) {
 		if (res['code'] == 0) {
-			question_section.innerHTML = `<p class="score_display">你的分数: ${res['score']}</p>`
+			let display = `<p class="score_display">你的分数: ${res['score']}</p>`
+			display += `<button class="op_btn result_btn" data-action="display">查看成绩单</button>`
+			display += `<button class="op_btn result_btn" data-action="retest">重新测试</button>`
+			question_section.innerHTML = display
+			bind_test_action()
 		}
-		else
+		else {
 			alert("后台分数获取失败!")
+			question_section.innerHTML = ""
+		}
+	}
+
+	/**
+	 * 绑定测试做完之后的按钮点击事件
+	 * @return {[type]} [description]
+	 */
+	function bind_test_action() {
+		for ( let i = 1; i < question_section.childElementCount; i ++ ) {
+			question_section.children[i].addEventListener("click", e => {
+				e.preventDefault()
+				let t = e.target || e.srcElement
+				let action = t.dataset['action']
+				if ( action == "retest" ) {
+					nav_btns[3].click()
+				}
+				if ( action == "display" ) {
+					toggle_result(true)
+				}
+			})
+		}
+	}
+
+	function toggle_result(toggle) {
+
 	}
 
 	/**

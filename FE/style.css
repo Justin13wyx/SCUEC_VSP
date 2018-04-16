@@ -394,16 +394,19 @@ footer > #copyright {
 }
 
 #user_tooltip {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-around;
 	position: absolute;
 	top: 50%;
 	left: 50%;
 	width: 300px;
 	height: 300px;
-	margin: -150px 0 0 -150px;
+	margin: -145px 0 0 -145px;
 	background-color: #eee;
 	border-radius: 20px;
 	box-shadow: 1px 1px 3px #aaa;
-	padding: 20px;
+	padding: 10px;
 	z-index: 9997;
 	transform: translate3d(0, -200%, 0);
 	transition: all 0.4s;
@@ -414,21 +417,34 @@ footer > #copyright {
 	font-weight: bold;
 }
 
-#user_tooltip > #logout_btn {
-	position: relative;
-	bottom: 0px;
-	left: 50%;
+#user_tooltip > .control_area {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-around;
+	align-items: center;
+	align-self: stretch;
+}
+
+#cancel_tooltip {
+	font-size: 17px;
+	width: 40px;
+	padding: 5px;
+	text-align: center;
+	float: right;
+	cursor: pointer;
+}
+
+#user_tooltip > .control_area > button {
 	height: 30px;
 	width: 100px;
 	border: none;
 	border-radius: 10px;
 	box-shadow: 1px 1px 3px #000;
-	margin: 0 0 0 -50px;
 	cursor: pointer;
 	transition: all 0.3s;
 }
 
-#user_tooltip > #logout_btn:hover {
+#user_tooltip > .control_area > button:hover {
 	background-color: #aaa;
 	color: #fff;
 }
@@ -776,5 +792,9 @@ footer > #copyright {
 
 .score_display {
 	font-size: 27px;
+}
+
+.result_btn {
+	margin: 20px 0;
 }
 
