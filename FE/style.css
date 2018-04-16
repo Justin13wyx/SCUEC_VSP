@@ -756,7 +756,7 @@ footer > #copyright {
 	padding: 20px 10px;
 }
 
-#test_area > #question_section > .question_item > .question_ratio {
+#test_area > #question_section > .question_item > .question_radio {
 	display: flex;
 	flex-direction: column;
 }
@@ -767,5 +767,10 @@ footer > #copyright {
 	flex-direction: row;
 	padding: 20px;
 	justify-content: space-around;
+}
+
+.answer_radio {
+	cursor: pointer;
+	margin: 0 10px;
 }
 

@@ -16,7 +16,7 @@
 	btn2func.set("fetch_info", fetch_info)
 	btn2func.set("fetch_video", fetch_video)
 	btn2func.set("fetch_instruction", fetch_instruction)
-	btn2func.set("fetch_questions", fetch_questions) // data-func和目标回调函数引用的关联映射
+	btn2func.set("fetch_questions", check_haveaccess2test) // data-func和目标回调函数引用的关联映射
 
 	var admin_area = document.getElementById("admin_area");
 	var close_btn = document.getElementById("icon-close");
@@ -33,6 +33,8 @@
 	var question_box = document.getElementById("admin_questionbox")
 	var question_btns = document.getElementsByClassName("control_btn");
 	var question_input = document.getElementById("manual_question")
+	var question_section = document.getElementById("question_section");
+	var test_control = document.getElementsByClassName("test_control_area")[0].children;
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -64,6 +66,7 @@
 
 	var access = 0;
 	var username = "";
+	var intest = 0;
 
 	var admin_state = ""
 	var files = null;
@@ -105,6 +108,20 @@
 				data = make_data(data)
 				if (confirm("确定设置成" + admin_input.children.pass.value + "?"))
 					fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/setpass", check_setpass_state, data)
+			}
+		})
+	}
+
+	for ( let btn of test_control ) {
+		btn.addEventListener("click", e => {
+			e.preventDefault()
+			let t = e.target || e.srcElement
+			let action = t.dataset['action']
+			if ( action == "erase" ) {
+				clear_all()
+			}
+			else if ( action == "submit" ) {
+				submit_answer()
 			}
 		})
 	}
@@ -166,6 +183,13 @@
 	for ( let btn of nav_btns ) {
 		btn.addEventListener("click", e => {
 			e.preventDefault()
+			if ( intest == 1 ) { 
+				if ( confirm("当前正在测试中!\n是否退出测试?") ) {
+					intest = 0;
+				}
+				else
+					return;
+			}
 			menu_switch(e, btn, btn2view.get(btn.getAttribute("data-role")), btn2func.get(btn.getAttribute("data-callback")))
 		})
 	}
@@ -491,16 +515,49 @@
 	 * 测评题目获取
 	 * @return {[type]} [description]
 	 */
-	function fetch_questions() {
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/test/getQuestions?mac_id=1", render_questions)
+	function fetch_questions(res) {
+		if ( res['access'] == true ) {
+			fetch_data("GET", "http://127.0.0.1:5000/apiv1/test/getQuestions?mac_id=1", render_questions)
+		}
+		else {
+			alert("你还没有完成视频观看或者说明阅读要求!\n通过点击用户头像可以查看当前完成状态.")
+			setTimeout(e => {nav_btns[0].click()}, 500)
+			return;
+		}
 	}
 
+	/**
+	 * 渲染试题页面
+	 * @param  {[type]} res [description]
+	 * @return {[type]}     [description]
+	 */
 	function render_questions(res) {
 		if ( res['code'] == -1 ) {
 			alert("抓取后台题库错误!")
 			return;
 		}
-		console.log(res)
+		let raw_data = res['data']
+		let html = "";
+		let question_no = 1;
+		for ( let question_item of raw_data ) {
+			let selection_no = 1
+			// 渲染题目
+			html += `<div class="question_item" data-id="${question_item['qid']}">
+				<div class="question_title">
+					<p>${question_no}.${question_item['question']}</p>
+				</div>
+				<div class="question_radio">`
+			// 渲染选项
+			for ( let selection of question_item['selections'] ) {
+				html += `<p><input type="radio" data-role="${selection_no}" class="answer_radio"><label>${selection}</label></p>`
+				selection_no += 1
+			}
+			// 闭合标签
+			html += `</div></div>`
+			question_no += 1
+		}
+		question_section.innerHTML = html
+		bind_radio()
 	}
 
 	/**
@@ -603,7 +660,7 @@
 		if (role == 'register') {
 			// 填充验证
 			for ( let i = 1; i < login_panel.childElementCount - 1; i++) {
-				if (login_panel.children[i].value == "") {
+				if (login_panel.children[i].value === "") {
 					alert(login_panel.children[i].placeholder+"不能为空");
 					return;
 				}
@@ -611,7 +668,7 @@
 					form.set(login_panel.children[i].name, login_panel.children[i].value)
 				}
 				else  {
-					login_panel.children[i].value = ""
+					// login_panel.children[i].value = ""
 					return;
 				}
 			}
@@ -662,14 +719,14 @@
 	function check_register_state(res) {
 		if (res['code'] == '0') {
 			// 注册成功
-			toggle_login(0)
-			//TODO: admin特例处理
+			// admin特例处理
 			if ( res['api'] ) {
 				render_admin(res['api'])
 				return;
 			}
 			// 如果不是在管理界面, 就直接登陆了
 			do_login_or_register("login")
+			toggle_login(0)
 		}
 		if (res['code'] == '-1') {
 			// 后台数据库写入失败
@@ -740,7 +797,8 @@
 	 * @return {[type]} [description]
 	 */
 	function logout() {
-		if (confirm("确定登出?")) {
+		if (confirm("确定登出?\n你的信息(包括测试)不会被保存!")) {
+			intest = 0;
 			data = "username=" + username
 			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogout", check_logout_state, data)
 			toggle_tooltip(0)
@@ -815,6 +873,7 @@
 		}
 		e.cancelBubble = true;
 		btn_switch(selected_btn);
+		video.pause()
 		curView.style.transform = "translate3d(-150%,0,0)";
 		curView.style.opacity = 0;
 		toView.style.display = "flex";
@@ -1445,19 +1504,69 @@ D 这是选项D, 错误答案
 	}
 
 	/**
+	 * 检查用户是否有资格进行测试
+	 * @return {[type]} [description]
+	 */
+	function check_haveaccess2test() {
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/canTest?user=" + username, fetch_questions)
+	}
+
+	/**
 	 * 选择选项的点击事件绑定函数, 由于是动态生成的, 因此采用lazy绑定的模式啦
 	 * @param  {[type]} radio [description]
 	 * @return {[type]}       [description]
 	 */
-	function bind_radio(radio) {
-		radio.addEventListener("click", e => {
-			let t = e.target || e.srcElement
-			let block = t.parentElement.parentElement
-			for ( let p of block.children ) {
-				p.children[0].checked = false
+	function bind_radio() {
+		let radios = document.getElementsByClassName("answer_radio")
+		for ( let radio of radios ) {
+			radio.addEventListener("click", e => {
+				intest = 1;
+				let t = e.target || e.srcElement
+				let block = t.parentElement.parentElement
+				for ( let p of block.children ) {
+					p.children[0].checked = false
+				}
+				t.checked = true
+				block.dataset['selected'] = t.dataset['role']
+			})
+		}
+	}
+
+	function submit_answer() {
+		if ( confirm("确定提交答案?") ) {
+			intest = 0;
+			let items = question_section.children
+			user_pack = []
+			for ( let item of items ) {
+				let tmp = [item.dataset['id']]
+				let ans = item.children[1].dataset['selected']
+				if ( ans ) {
+					tmp.push(ans)
+				}
+				else {
+					intest = 1;
+					alert("你还有没有完成的题目!\n请全部完成之后再提交")
+					return;
+				}
+				user_pack.push(tmp)
 			}
-			t.checked = true
-		})
+			fetch_data("POST", "http://127.0.0.1:5000/apiv1/test/uploadAnswers", check_answers, "answers=" + user_pack)
+		}
+	}
+
+	function check_answers(res) {
+
+	}
+
+	/**
+	 * 清空作答
+	 * @return {[type]} [description]
+	 */
+	function clear_all() {
+		let radios = document.getElementsByClassName("answer_radio")
+		for ( let radio of radios ) {
+			radio.checked = false
+		}
 	}
 
 
