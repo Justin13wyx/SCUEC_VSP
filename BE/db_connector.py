@@ -26,8 +26,8 @@ class DBConnector:
         try:
             result_cursor = self.cursor.execute(sql)
         except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
-            print(sql)
-            print(e)
+            # print(sql)
+            # print(e)
             return False
         return result_cursor
 
@@ -37,20 +37,20 @@ class DBConnector:
         try:
             result_cursor = self.cursor.execute(sql)
         except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
-            print(sql)
-            print(e)
+            # print(sql)
+            # print(e)
             return False
         return result_cursor
 
     def set_attr(self, table, keywords, attributes):
         sql = set_sql.format(str(table), trim_comma(keywords).replace("\'", ""), trim_comma(attributes))
-        try:
-            self.cursor.execute(sql)
-            self.conn.commit()
-        except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
-            print(sql)
-            print(e)
-            return False
+        # try:
+        self.cursor.execute(sql)
+        self.conn.commit()
+        # except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
+        #     # print(sql)
+        #     # print(e)
+        #     return False
         return True
 
     def remove_attr(self, table, keyword, value, commit=False):
@@ -70,8 +70,8 @@ class DBConnector:
             self.cursor.execute(sql)
             self.conn.commit()
         except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
-            print(sql)
-            print(e)
+            # print(sql)
+            # print(e)
             return False
         return True
 

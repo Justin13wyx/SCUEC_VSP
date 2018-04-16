@@ -34,8 +34,8 @@ def register():
     info_values = list(user_info.values())
     try:
         result = main_connector.set_attr("user_info", tuple(info_keys[:3]), tuple(info_values[:3]))  # 设置用户信息
-    except db_connector.IntegrityError as error:
-        if "UNIQUE" in error and "username" in error:
+    except (db_connector.OperationalError, db_connector.IntegrityError) as error:
+        if "UNIQUE" in str(error) and "username" in str(error):
             return pack_response(-4, "duplicate username")
         return pack_response(-1, "database written failed!")
     if result:
@@ -287,6 +287,7 @@ def push_questions():
 @app.route(prefix.format("test", "uploadAnswers"), methods=['POST'])
 def check_answers():
     user_answer = request.values.get("answers").split(",")
+    username = request.args.get("user")
     answer = user_answer[1::2]
     questions = user_answer[::2]
     score = 0
@@ -294,6 +295,12 @@ def check_answers():
         ques_info = test_connector.get_attr("questions", "id", questions[index], ("answer", "score", )).fetchall()[0]
         if int(answer[index]) == int(ques_info[0]):
             score += ques_info[1]
+    # 同时更新用户状态表
+    max_score = main_connector.get_attr("user_state", "username", username, ("score", )).fetchone()[0]
+    if score > max_score:
+        main_connector.update_attr("user_state", "username", username, {"score": score, "havetest": 1})
+    else:
+        main_connector.update_attr("user_state", "username", username, {"havetest": 1})
     return pack_response(0, "ok", score=score)
 
 
