@@ -14,7 +14,7 @@ machine_id = 1
 BASEPATH = "."
 
 app.secret_key = 'A0Zr98j/3yX R~XHH!jmN]LWX/,?RT'
-gen = TimedJSONWebSignatureSerializer(app.secret_key, expires_in=600)
+gen = TimedJSONWebSignatureSerializer(app.secret_key, expires_in=1200)
 
 pass_map = {
     "videos": "videorequire",
@@ -23,6 +23,7 @@ pass_map = {
 }
 
 main_connector = db_connector.DBConnector("./scuec_vsp")
+test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
 
 
 @app.route(prefix.format("user", "doSignin"), methods=["POST"])
@@ -167,6 +168,16 @@ def ungrant_user():
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
 
 
+@app.route(prefix.format("user", "canTest"), methods=['GET'])
+def check_access2test():
+    username = request.args.get("user")
+    info = main_connector.get_attr("user_state", "username", username, ("videopass", "instructionpass", )).fetchall()[0]
+    require = main_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire", "instructionrequire")).fetchall()[0]
+    if info[0] >= require[0] and info[1] >= require[1]:
+        return pack_response(0, "ok", access=True)
+    return pack_response(0, "ok", access=False)
+
+
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
     username = unquote(request.values.get("username"))
@@ -215,6 +226,7 @@ def after_opening():
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])
 def push_video_index():
     videos = os.listdir(path.join(BASEPATH, "videos", str(machine_id)))
+    videos.sort()
     res = []
     for video in videos:
         res.append([video, path.join("videos", str(machine_id), video)])
@@ -248,7 +260,17 @@ def push_instruction(machine_id, instruction):
 @app.route(prefix.format("test", "getQuestions"), methods=['GET'])
 def push_questions():
     mac_id = request.args.get("mac_id")
-    target = path.join(BASEPATH, "tests", mac_id, "questions")
+    data = []
+    questions = test_connector.get_all("questions").fetchall()
+    for question in questions:
+        tmp = []
+        question_item = {"question": question[1], "score": question[4], "qid": question[0]}
+        selections = question[2].split(",")
+        for selection_id in selections:
+            tmp.append(test_connector.get_attr("selections", "id", selection_id, ("content",)).fetchall()[0][0])
+        question_item.update(selections=tmp)
+        data.append(question_item)
+    return pack_response(0, "ok", data=data)
     # try:
     #     fp = open(target, "r", encoding="utf-8")
     #     content = fp.read()
@@ -264,7 +286,7 @@ def push_questions():
 
 @app.route(prefix.format("test", "uploadAnswers"), methods=['POST'])
 def check_answers():
-    pass
+    print(request.values.get("answers"))
 
 
 @app.route(prefix.format("admin", "getToken"), methods=['POST'])
@@ -303,6 +325,7 @@ def admin_videos():
     title = ["ID", "视频名", "大小", "类型"]
     data = []
     videos = os.listdir(path.join(BASEPATH, "videos", str(machine_id)))
+    videos.sort()
     for video in videos:
         data.append([video, get_size(path.join(BASEPATH, "videos", str(machine_id), video)), path.splitext(video)[-1]])
     return pack_response(0, "ok", title=title, data=data, attr="videos", access=True)
