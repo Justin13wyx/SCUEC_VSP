@@ -1,7 +1,7 @@
 import os
 
 import db_connector
-from flask import Flask, request, jsonify, session, redirect, send_file, make_response
+from flask import Flask, request, jsonify, session, send_file, make_response
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 
 app = Flask(__name__)
@@ -286,7 +286,15 @@ def push_questions():
 
 @app.route(prefix.format("test", "uploadAnswers"), methods=['POST'])
 def check_answers():
-    print(request.values.get("answers"))
+    user_answer = request.values.get("answers").split(",")
+    answer = user_answer[1::2]
+    questions = user_answer[::2]
+    score = 0
+    for index in range(len(questions)):
+        ques_info = test_connector.get_attr("questions", "id", questions[index], ("answer", "score", )).fetchall()[0]
+        if int(answer[index]) == int(ques_info[0]):
+            score += ques_info[1]
+    return pack_response(0, "ok", score=score)
 
 
 @app.route(prefix.format("admin", "getToken"), methods=['POST'])

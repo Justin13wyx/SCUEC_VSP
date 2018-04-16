@@ -1532,6 +1532,10 @@ D 这是选项D, 错误答案
 		}
 	}
 
+	/**
+	 * 提交答案
+	 * @return {[type]} [description]
+	 */
 	function submit_answer() {
 		if ( confirm("确定提交答案?") ) {
 			intest = 0;
@@ -1555,7 +1559,11 @@ D 这是选项D, 错误答案
 	}
 
 	function check_answers(res) {
-
+		if (res['code'] == 0) {
+			question_section.innerHTML = `<p class="score_display">你的分数: ${res['score']}</p>`
+		}
+		else
+			alert("后台分数获取失败!")
 	}
 
 	/**
