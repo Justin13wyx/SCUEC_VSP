@@ -39,6 +39,7 @@
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
 	var video_control = document.getElementById("video_control");
+	var play_btn = document.getElementById("play_btn");
 	var tokens = null;
 	var max_view = 0;
 	var max_viewtime = 0;
@@ -293,7 +294,7 @@
 	// 前进, 暂停播放, 后移的事件绑定
 	video_control.addEventListener('click', e => {
 		e.preventDefault()
-		target = e.target || e.srcElement
+		let target = e.target || e.srcElement
 		if (target.dataset['role'] == "-10") {
 			video.currentTime -= 10;
 		}
@@ -304,7 +305,7 @@
 			else video.currentTime = max_viewtime
 		}
 		else if (target.dataset['role'] == "play") {
-			toggle_play(target)
+			toggle_play()
 		}
 	})
 
@@ -451,6 +452,7 @@
 		for (let i = 0; i < haveseen; i ++) {
 			tokens[i].innerHTML = "√"
 		}
+		tokens[haveseen].parentElement.setAttribute("class", "playing")
 		tokens[haveseen].parentElement.click()
 	}
 
@@ -568,15 +570,15 @@
 	 * @param  {[type]} button [description]
 	 * @return {[type]}        [description]
 	 */
-	function toggle_play(button) {
+	function toggle_play() {
 		state = video.paused;
 		if (state) {
 			video.play();
-			button.innerHTML = "暂停"
+			play_btn.innerHTML = "暂停"
 		}
 		else {
 			video.pause();
-			button.innerHTML = "播放"
+			play_btn.innerHTML = "播放"
 		}
 	}
 
@@ -885,7 +887,7 @@
 		}
 		e.cancelBubble = true;
 		btn_switch(selected_btn);
-		video.pause()
+		if ( !video.paused ) toggle_play()
 		curView.style.transform = "translate3d(-150%,0,0)";
 		curView.style.opacity = 0;
 		toView.style.display = "flex";
