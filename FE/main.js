@@ -663,10 +663,18 @@
 		if (role == 'register') {
 			// 填充验证
 			for ( let i = 1; i < login_panel.childElementCount - 1; i++) {
+				// 长度验证
+				if ( i == 1 || i == 4 ) {
+					if ( login_panel.children[i].value.length < 5 ) {
+						alert(login_panel.children[i].placeholder + "长度要大于5")
+						return;
+					}
+				}
 				if (login_panel.children[i].value === "") {
 					alert(login_panel.children[i].placeholder+"不能为空");
 					return;
 				}
+				// 敏感字符过滤
 				if ( validate(login_panel.children[i].value) && filterSqlStr(login_panel.children[i].value) ) {
 					form.set(login_panel.children[i].name, login_panel.children[i].value)
 				}
