@@ -181,12 +181,12 @@ def check_access2test():
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
     username = unquote(request.values.get("username"))
-    truename = main_connector.get_attr("user_info", "username", username, ("truename",)).fetchall()
+    truename = main_connector.get_attr("user_info", "username", username, ("truename",)).fetchone()
     result_set = main_connector.get_attr("user_state", "username", username,
                                        ("videopass", "instructionpass", "score", "havetest",)).fetchall()
     requirement = main_connector.get_attr("machine_requirement", "id", machine_id,
                                         ("videorequire", "instructionrequire", "scorerequire")).fetchall()
-    return pack_response(0, "ok", truename=truename, userstate=result_set[0], requirement=requirement[0])
+    return pack_response(0, "ok", truename=truename[0], userstate=result_set[0], requirement=requirement[0])
 
 
 @app.route(prefix.format("user", "updateVideoIndex"), methods=["POST"])
@@ -368,8 +368,16 @@ def admin_tests():
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
     title = ["ID", "题目", "选项", "答案"]
+    raw_data = test_connector.get_all("questions").fetchall()
     data = []
-
+    for question in raw_data:
+        selections = []
+        tmp = [question[1]]
+        for selection_id in question[2].split(","):
+            selections.append(test_connector.get_attr("selections", "id", int(selection_id), ("content", )).fetchone()[0])
+        tmp.append(selections)
+        tmp.append(question[3])
+        data.append(tmp)
     return pack_response(0, "ok", title=title, data=data, attr="tests", access=True)
 
 
@@ -399,6 +407,12 @@ def delete_item():
         except OSError:
             return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("admin", "newQuestions"), methods=['POST'])
+def write_new_questions():
+    print(request.values.get("data"))
+    pass
 
 
 @app.route(prefix.format("admin", "upload"), methods=['OPTIONS', 'POST'])
@@ -454,6 +468,8 @@ def pack_response(status_code, msg, **kwargs):
         data.update({k: v})
     res = jsonify(data)
     res.headers['Access-Control-Allow-Origin'] = "*"
+    res.headers['X-Frame-Options'] = "DENY"
+    res.headers['X-XSS-Protection'] = "1"
     return res
 
 

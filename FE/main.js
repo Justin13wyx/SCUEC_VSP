@@ -59,10 +59,15 @@
 	var maskmask = document.getElementById("mask_for_mask");
 	var logout_btn = document.getElementById("logout_btn");
 	var tooltip = document.getElementById("user_tooltip");
-	
+
+	var display_result = document.getElementById("display_result")
+	var result = document.getElementById("result")
 
 	var canvas = document.getElementById("loading_token");
 	var context = canvas.getContext('2d');
+	var result = document.getElementById("result_div");
+	var result_canvas = document.getElementById("result");
+	var result_context = result_canvas.getContext("2d")
 	var loading_timer = 0;
 	var start_angle = 0;
 
@@ -91,8 +96,6 @@
 			do_action(action)
 		})
 	}
-
-	
 
 	// 对设置及格线的那个窗口按钮的事件绑定
 	for ( let btn of control_btns ) {
@@ -156,6 +159,11 @@
 				do_upload(e.target)
 		})
 	}
+
+	result_div.children[1].addEventListener("click", e => {
+		e.preventDefault()
+		toggle_result(false)
+	})
 
 	// 关闭管理面板的事件绑定
 	close_btn.addEventListener("click", e => {
@@ -246,6 +254,8 @@
 
 	// 注册登出按钮的点击事件
 	logout_btn.addEventListener("click", e => { logout() })
+
+	display_result.addEventListener("click", e => { toggle_result(true);toggle_tooltip(false); })
 
 	// 防止过度后移, 记录当前观看的最大位置
 	video.ontimeupdate = function () {
@@ -984,7 +994,7 @@
 	 */
 	function fill_user_info(res) {
 		mask.style['display'] = "block"
-		tooltip.children[0].innerHTML = `你好,${res['truename']}<span id="cancel_tooltip">✘</span>`
+		tooltip.children[0].innerHTML = `你好,${res['truename']}<span id="cancel_tooltip">×</span>`
 		let cancel_tooltip = document.getElementById("cancel_tooltip");
 		cancel_tooltip.addEventListener("click", e => {
 			toggle_tooltip(0)
@@ -1087,7 +1097,7 @@
 			rule = [3, 10, 20, 10]
 		}
 		if (action == "tests") {
-			rule = [3, 35, 35, 17]
+			rule = [3, 5, 35, 35, 17]
 		}
 		// 填充位置约束的colgroup
 		rule_ele = ""
@@ -1469,15 +1479,15 @@
 			let holder = 
 `目前仅支持选择题型, 需按照下面格式进行添加(批量上传同参考此格式):
 
-1.这是一个题目, 题目不要换行.
-A 选项和选项内容使用一个空格进行分隔
-B 这是选项B, 错误答案
-*C 这是选项C, 这是正确答案
-D 这是选项D, 错误答案
+这是一个题目, 题目不要换行, 题号不用写
+选项可以不用写ABC这些
+这是选项B, 错误答案
+* 这是正确答案, 正确答案前面有一个星号
+这是选项D, 错误答案
 
-2.不同题目之间使用一个空行进行分割.
-*A 选项和选项内容使用一个空格进行分隔
-*B 这是选项B, 这一题选A和选B都对`
+不同题目之间仅使用一个空行进行分割.
+* 这是第一个选项
+* 这是选项B, 这一题选A和选B都对, 并且只有两个选项`
 			question_input.value = ""
 			question_input.setAttribute("placeholder", holder)
 			question_box.style['transform'] = "scale3d(1,1,1)"
@@ -1491,12 +1501,14 @@ D 这是选项D, 错误答案
 	 * 解析用户输入的文本串并且返回数据结构层试题
 	 * @return {[type]} [description]
 	 */
-	function check_struct() {
+	function check_struct(raw_data) {
 		let result = []
-		let raw_data = question_input.value
-		let questions = raw_data.split(/\n\n|\r\r|\r\n\r\n/)
+		let questions = raw_data.split(/\n(\n)*\n/)
+		console.log(questions)
 		for ( let q of questions ) {
-			result.push(q.split("\n"))
+			if (q && q !== "\n") {
+				result.push(q.split("\n"))
+			}
 		}
 		return result
 	}
@@ -1506,14 +1518,18 @@ D 这是选项D, 错误答案
 	 * @return {[type]} [description]
 	 */
 	function confirm_new_question() {
-		let question_data = check_struct()
+		let question_data = check_struct(question_input.value)
 		if ( question_data.length == 0 ) {
 			alert("试题格式有问题或者长度为0!")
 			return;
 		}
 		console.log(question_data)
 		// 发送data
-		// 
+		fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/newQuestions", check_confirm_state, `data=${question_data}`)
+	}
+
+	function check_confirm_state(res) {
+
 	}
 
 	function switch_questionbox() {
@@ -1601,7 +1617,8 @@ D 这是选项D, 错误答案
 				let t = e.target || e.srcElement
 				let action = t.dataset['action']
 				if ( action == "retest" ) {
-					nav_btns[3].click()
+					if ( confirm("确定重新测试? 将取最高成绩作为最终结果.") )
+						nav_btns[3].click()
 				}
 				if ( action == "display" ) {
 					toggle_result(true)
@@ -1611,7 +1628,54 @@ D 这是选项D, 错误答案
 	}
 
 	function toggle_result(toggle) {
+		if ( toggle ) {
+			result.style['transform'] = "scale3d(1,1,1)";
+			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), render_result)
+		}
+		else {
+			result.style['transform'] = "scale3d(0,0,0)"
+			clear_result()
+		}
+	}
 
+	function render_result(res) {
+		mask.style['display'] = "block"
+		// 绘制背景
+		result_context.save()
+		result_context.fillStyle = "white"
+		result_context.fillRect(0, 0, result_canvas.width, result_canvas.height)
+		result_context.fill()
+		result_context.restore()
+		// 绘制标题
+		result_context.save()
+		result_context.font = " bold 50px Arial"
+		result_context.textAlign = "center"
+		result_context.fillStyle = "black"
+		result_context.fillText("中南民族大学大型仪器虚拟仿真平台测评报告", result_canvas.width / 2, canvas.height * 0.2)
+		result_context.fill()
+		result_context.restore()
+		// 填充信息
+		result_context.save()
+		result_context.fillStyle = "black"
+		result_context.font = "30px Arial"
+		result_context.fillText(`姓名: ${res['truename']}`, result_canvas.width * 0.05, canvas.height * 0.45)
+		result_context.fillText(`测评仪器: 毛细管电泳仪`, result_canvas.width * 0.05, canvas.height * 0.6)
+		result_context.fillText(`报告时间: ${new Date().toLocaleString()}`, result_canvas.width * 0.05, canvas.height * 0.75)
+		result_context.fillText(`视频观看: ${res['userstate'][0]} / ${res['requirement'][0]}`, result_canvas.width * 0.05, canvas.height * 1.05)
+		result_context.fillText(`说明阅读: ${res['userstate'][1]} / ${res['requirement'][1]}`, result_canvas.width * 0.05, canvas.height * 1.2)
+		result_context.fillText(`测评成绩: ${res['userstate'][2]} / ${res['requirement'][2]}`, result_canvas.width * 0.05, canvas.height * 1.35)
+		result_context.font = "45px Arial"
+		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)
+		result_context.font = "20px Arial"
+		result_context.fillText("* 本测评报告做结果参考, 以后台管理数据为准.", result_canvas.width * 0.05, canvas.height * 2.4)
+		result_context.fillText("* 右键可以保存本测评报告为图片.", result_canvas.width * 0.05, canvas.height * 2.5)
+		result_context.fill()
+		result_context.restore()
+	}
+
+	function clear_result() {
+		mask.style['display'] = "none"
+		result_context.clearRect(0, 0, result_canvas.width, result_canvas.height)
 	}
 
 	/**
