@@ -577,19 +577,31 @@ footer > #copyright {
 
 .manager_area {
 	flex: 26;
+	display: flex;
+	flex-direction: column;
 }
 
 .desc_area_head {
-	width: 100%;
+	flex: 2;
+	align-self: stretch;
 	padding: 8px 0;
+	table-layout: fixed;
 	background-color: rgb(190, 195, 211);
 	border-top: 2px solid rgb(180, 190, 200);
 	border-bottom: 2px solid rgb(180, 190, 200);
 }
 
+.desc_area_body_fixed {
+	flex: 14;
+	align-self: stretch;
+	overflow: auto;
+}
+
 .desc_area_body {
 	width: 100%;
 	padding: 8px 0;
+	table-layout: fixed;
+	overflow: auto;
 }
 
 .desc_area_head > thead > tr > th, .desc_area_body > tbody > tr > td {
@@ -823,3 +835,9 @@ footer > #copyright {
 	margin-left: -15%;
 }
 
+/*.sp_btn {
+	position: relative;
+	right: 0;
+	top: 50%;
+
+}*/

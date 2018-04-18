@@ -61,7 +61,6 @@
 	var tooltip = document.getElementById("user_tooltip");
 
 	var display_result = document.getElementById("display_result")
-	var result = document.getElementById("result")
 
 	var canvas = document.getElementById("loading_token");
 	var context = canvas.getContext('2d');
@@ -76,7 +75,7 @@
 	var intest = 0;
 
 	var admin_state = ""
-	var files = null;
+	var files = [];
 	var send_queue = [];
 
 	// 具体的管理功能事件绑定
@@ -1132,6 +1131,7 @@
 					main_ele += "<p>尚未参加测评</p></div>"
 				else
 					main_ele += `<p>测评成绩: ${user['state'][2]}/${res['require'][2]}<p></div>`
+				main_ele+= `<button class="op_btn sp_btn" data-role="${user['info'][1]}">测评报告</button>`
 				main_ele += `</tr>`
 			}
 			desc_area_body.children[1].innerHTML = main_ele
@@ -1140,15 +1140,32 @@
 				action_btns[btn].setAttribute("class", "action_btn")
 			}
 			action_btns[6].setAttribute("class", "action_btn action_disable")
-			bind_checkbox()
+			bind_checkbox();
+			bind_sp();
 			return;
 		}
 		main_ele = ""
 		for ( let item = 0; item < res['data'].length; item ++ ) {
 			main_ele += `<tr class="item_row" data-key="${res['data'][item][0]}"><td><input type="checkbox" data-action="" class="admin_checkbox"></td>`
 			main_ele += `<td>${item+1}</td>`
-			for ( let n = 0; n < res['data'][item].length; n ++ ) {
-				main_ele += `<td>${res['data'][item][n]}</td>`
+			if ( action == "tests" ) {
+				for ( let n = 0; n < res['data'][item].length; n ++ ) {
+					if ( n == 1 ) {
+						main_ele += `<td><div>`
+						for ( let selection of res['data'][item][n] ) {
+							main_ele += `<p>${selection}</p>`
+						}
+						main_ele += `</div></td>`
+					}
+					else {
+						main_ele += `<td>${res['data'][item][n]}</td>`
+					}
+				}
+			}
+			else {
+				for ( let n = 0; n < res['data'][item].length; n ++ ) {
+					main_ele += `<td>${res['data'][item][n]}</td>`
+				}
 			}
 			main_ele += "</tr>"
 		}
@@ -1187,12 +1204,23 @@
 		})
 	}
 
+	function bind_sp() {
+		let btns = document.getElementsByClassName("sp_btn");
+		for ( let btn of btns ) {
+			btn.addEventListener("click", e => {
+				e.preventDefault()
+				let t = e.target || e.srcElement
+				toggle_result(true, t.dataset['role'])
+			})
+		}
+	}
+
 	/**
 	 * 尝试抓取所有的checkbox元素所在的那一行的data-key
 	 * @return {[type]} [description]
 	 */
 	function check_target() {
-		result = [];
+		let result = [];
 		let boxes = document.getElementsByClassName("admin_checkbox")
 		if ( boxes[0].checked ) {
 			eles = document.getElementsByClassName("item_row")
@@ -1220,7 +1248,7 @@
 			admin_uploadbox.style['transform'] = "scale3d(1,1,1)"
 		}
 		else {
-			files = null;
+			files = [];
 			if ( send_queue.length == 0 )
 				preview_area.innerHTML = ""
 			admin_uploadbox.style['transform'] = "scale3d(0,0,0)"
@@ -1369,6 +1397,9 @@
 		else if ( state == "instructions" ) {
 			type = "application/pdf"
 		}
+		else if ( state == "tests" ) {
+			type = "text/plain"
+		}
 		for ( let file of filelist ) {
 			if ( file.type !== type ) return file.name
 			if ( file.size >= 209715200 ) return file.name // 文件大于200MB, 拒绝
@@ -1382,6 +1413,7 @@
 	 * @return {[type]}          [description]
 	 */
 	function render_previewlist(filelist) {
+		console.log(filelist)
 		html = ""
 		for ( let file of filelist ) {
 			html += `<div class="file_item"><span class="file_name">${file.name}</span><span class="upload_state">等待中</span></div>`
@@ -1398,10 +1430,16 @@
 		btn.setAttribute("disabled", "disabled")
 		admin_upload_btns[0].setAttribute("disabled", "disabled")
 		let labels = document.getElementsByClassName("upload_state");
+		if ( files.length == 0 ) {
+			alert("请选择文件!")
+			admin_upload_btns[0].removeAttribute("disabled")
+			btn.removeAttribute("disabled")
+			return;
+		}
 		for ( let i = 0; i < labels.length; i ++ ) {
 			upload_file(files[i], labels[i])
 		}
-		files = null;
+		files = [];
 		btn.removeAttribute("disabled")
 	}
 
@@ -1480,14 +1518,14 @@
 `目前仅支持选择题型, 需按照下面格式进行添加(批量上传同参考此格式):
 
 这是一个题目, 题目不要换行, 题号不用写
-选项可以不用写ABC这些
+选项可以不用写ABC这些, 这是第一个选项
 这是选项B, 错误答案
 * 这是正确答案, 正确答案前面有一个星号
 这是选项D, 错误答案
 
 不同题目之间仅使用一个空行进行分割.
 * 这是第一个选项
-* 这是选项B, 这一题选A和选B都对, 并且只有两个选项`
+这是选项B, 本题只有两个选项`
 			question_input.value = ""
 			question_input.setAttribute("placeholder", holder)
 			question_box.style['transform'] = "scale3d(1,1,1)"
@@ -1498,16 +1536,20 @@
 	}
 
 	/**
-	 * 解析用户输入的文本串并且返回数据结构层试题
+	 * 解析用户输入的文本串, 简单的格式检查
 	 * @return {[type]} [description]
 	 */
 	function check_struct(raw_data) {
 		let result = []
 		let questions = raw_data.split(/\n(\n)*\n/)
-		console.log(questions)
 		for ( let q of questions ) {
+			flag = false
 			if (q && q !== "\n") {
-				result.push(q.split("\n"))
+				for (let s of q.split("\n")) {
+					if ( s.startsWith("*") ) flag = true
+				}
+				if ( !flag ) return []
+				result.push(q)
 			}
 		}
 		return result
@@ -1523,13 +1565,19 @@
 			alert("试题格式有问题或者长度为0!")
 			return;
 		}
-		console.log(question_data)
 		// 发送data
-		fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/newQuestions", check_confirm_state, `data=${question_data}`)
+		fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/newQuestions", check_confirm_state, `state=${admin_state}&data=${question_input.value}`)
 	}
 
 	function check_confirm_state(res) {
-
+		if ( res['code'] == 0 ) {
+			toggle_new_question(false)
+			render_admin(res['api'])
+		}
+		else {
+			alert("上传出错!")
+			toggle_new_question(false)
+		}
 	}
 
 	function switch_questionbox() {
@@ -1627,10 +1675,11 @@
 		}
 	}
 
-	function toggle_result(toggle) {
+	function toggle_result(toggle, _user) {
+		let user = _user || username
 		if ( toggle ) {
 			result.style['transform'] = "scale3d(1,1,1)";
-			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), render_result)
+			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(user), render_result)
 		}
 		else {
 			result.style['transform'] = "scale3d(0,0,0)"
@@ -1688,6 +1737,5 @@
 			radio.checked = false
 		}
 	}
-
 
 })()
