@@ -271,17 +271,6 @@ def push_questions():
         question_item.update(selections=tmp)
         data.append(question_item)
     return pack_response(0, "ok", data=data)
-    # try:
-    #     fp = open(target, "r", encoding="utf-8")
-    #     content = fp.read()
-    # except OSError as ex:
-    #     print(e)
-    #     return pack_response(-1, "Error")
-    # fp.close()
-    # questions = content.split("\n\n")  # 这里是一个每一个题目组成的列表
-    # for question in questions:
-    #     ques_item = question.split("\n")
-    # print(questions)
 
 
 @app.route(prefix.format("test", "uploadAnswers"), methods=['POST'])
@@ -293,6 +282,8 @@ def check_answers():
     score = 0
     for index in range(len(questions)):
         ques_info = test_connector.get_attr("questions", "id", questions[index], ("answer", "score", )).fetchall()[0]
+        print(answer[index])
+        print(ques_info[0])
         if int(answer[index]) == int(ques_info[0]):
             score += ques_info[1]
     # 同时更新用户状态表
@@ -411,8 +402,7 @@ def delete_item():
 
 @app.route(prefix.format("admin", "newQuestions"), methods=['POST'])
 def write_new_questions():
-    print(request.values.get("data"))
-    pass
+    return write2db(request.values.get("data").encode("utf-8"))
 
 
 @app.route(prefix.format("admin", "upload"), methods=['OPTIONS', 'POST'])
@@ -424,11 +414,49 @@ def receive_files():
         res = make_response()
         res.headers['Access-Control-Allow-Origin'] = "*"
         return res
+    if request.values.get("state") == "tests":
+        return write2db(request.get_data())
     dest = path.join(BASEPATH, request.values.get("state"), str(machine_id))
     raw_data = request.get_data()
     filename = request.values.get("filename")
     with open(path.join(dest, filename), mode="wb") as f:
         f.write(raw_data)
+    return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+def write2db(data):
+    text_data = data.decode("utf-8")
+    questions = text_data.split("\n\n")
+    selection_id = test_connector.get_attr("sqlite_sequence", "name", "selections", ("seq", )).fetchone()
+    if not selection_id:
+        selection_id = 1
+    else:
+        selection_id = selection_id[0] + 1
+    for question in questions:
+        items = question.split("\n")
+        title = items[0]
+        start_id = selection_id
+        tmp = 0
+        for selection in items[1:]:
+            if selection == '':
+                continue
+            tmp += 1
+            try:
+                if selection.startswith("*"):
+                    print(tmp)
+                    selection = selection.split(" ", maxsplit=1)[-1]
+                    right_id = tmp
+                test_connector.set_attr("selections", ("id", "content",), (selection_id, selection, ))
+                selection_id += 1
+            except (db_connector.OperationalError, db_connector.IntegrityError) as error:
+                print(error)
+                return pack_response(1, "error")
+        # 选项全部写入数据库之后
+        try:
+            test_connector.set_attr("questions", ("title", "selections", "answer", ), (title, ",".join([str(x) for x in range(start_id, selection_id)]), str(right_id)))
+        except (db_connector.OperationalError, db_connector.IntegrityError) as error:
+            print(error)
+            return pack_response(1, "error")
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
 
 
