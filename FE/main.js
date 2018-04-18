@@ -161,6 +161,14 @@
 
 	result_div.children[1].addEventListener("click", e => {
 		e.preventDefault()
+		let dataURL = result_canvas.toDataURL("image/png")
+		let newW = window.open()
+		newW.document.write(`<img src="${dataURL}"/>`)
+		newW.setTimeout(newW.print, 200)
+	})
+
+	result_div.children[2].addEventListener("click", e => {
+		e.preventDefault()
 		toggle_result(false)
 	})
 
@@ -1698,9 +1706,8 @@
 		// 绘制标题
 		result_context.save()
 		result_context.font = " bold 50px Arial"
-		result_context.textAlign = "center"
 		result_context.fillStyle = "black"
-		result_context.fillText("中南民族大学大型仪器虚拟仿真平台测评报告", result_canvas.width / 2, canvas.height * 0.2)
+		result_context.fillText("中南民族大学大型仪器虚拟仿真平台测评报告", result_canvas.width * 0.05, canvas.height * 0.2)
 		result_context.fill()
 		result_context.restore()
 		// 填充信息

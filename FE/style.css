@@ -583,9 +583,8 @@ footer > #copyright {
 
 .desc_area_head {
 	flex: 2;
-	align-self: stretch;
+	width: 100%;
 	padding: 8px 0;
-	table-layout: fixed;
 	background-color: rgb(190, 195, 211);
 	border-top: 2px solid rgb(180, 190, 200);
 	border-bottom: 2px solid rgb(180, 190, 200);
@@ -600,7 +599,6 @@ footer > #copyright {
 .desc_area_body {
 	width: 100%;
 	padding: 8px 0;
-	table-layout: fixed;
 	overflow: auto;
 }
 
@@ -828,16 +826,10 @@ footer > #copyright {
 	height: 100%;
 }
 
-#result_div > .op_btn {
-	position: relative;
-	bottom: 0;
-	left: 50%;
-	margin-left: -15%;
+#result_div > .l_btn {
+	float: left;
 }
 
-/*.sp_btn {
-	position: relative;
-	right: 0;
-	top: 50%;
-
-}*/
+#result_div > .r_btn {
+	float: right;
+}
