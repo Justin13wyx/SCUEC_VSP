@@ -389,6 +389,9 @@ def delete_item():
     access = verify_token(request.values.get("token"))
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
+    if request.values.get("state") == "tests":
+        test_connector.remove_attr("questions", "title", request.values.get("target"), commit=True)
+        return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
     base_path = path.join(BASEPATH, request.values.get("state"), str(machine_id))
     items = request.values.get("target").split(",")
     for item in items:
