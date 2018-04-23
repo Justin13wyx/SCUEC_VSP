@@ -79,8 +79,8 @@
 	var send_queue = [];
 
 	// 具体的管理功能事件绑定
-	for ( action_btn of action_btns ) {
-		action_btn.addEventListener("click", e => {
+	for ( let i = 0; i < action_btns.length; i ++ ) {
+		action_btns[i].addEventListener("click", e => {
 			e.preventDefault()
 			let t = e.target || e.srcElement
 			if (t.getAttribute("class").match("action_disable")) {
@@ -97,8 +97,8 @@
 	}
 
 	// 对设置及格线的那个窗口按钮的事件绑定
-	for ( let btn of control_btns ) {
-		btn.addEventListener("click", e => {
+	for ( let i = 0; i < control_btns.length; i ++ ) {
+		control_btns[i].addEventListener("click", e => {
 			e.preventDefault()
 			let t = e.target || e.srcElement
 			let action = t.dataset['action']
@@ -118,8 +118,9 @@
 		})
 	}
 
-	for ( let btn of test_control ) {
-		btn.addEventListener("click", e => {
+	// 对测评界面的按钮绑定
+	for ( let i = 0; i < test_control.length; i ++ ) {
+		test_control[i].addEventListener("click", e => {
 			e.preventDefault()
 			let t = e.target || e.srcElement
 			let action = t.dataset['action']
@@ -133,7 +134,8 @@
 	}
 
 	// 手动录入题目的窗口取消和确定按钮事件绑定
-	for ( let btn of question_btns ) {
+	for ( let i = 0; i < question_btns.length; i ++ ) {
+		let btn = question_btns[i]
 		btn.addEventListener("click", e => {
 			e.preventDefault()
 			let t = e.target || e.srcElement
@@ -145,7 +147,8 @@
 	}
 
 	// 上传界面的按钮事件绑定
-	for ( let btn of admin_upload_btns ) {
+	for ( let i = 0; i < admin_upload_btns.length; i ++ ) {
+		let btn = admin_upload_btns[i]
 		btn.addEventListener("click", e => {
 			e.preventDefault()
 			let t = e.target || e.srcElement
@@ -159,6 +162,7 @@
 		})
 	}
 
+	// 打印按钮的事件绑定
 	result_div.children[1].addEventListener("click", e => {
 		e.preventDefault()
 		let dataURL = result_canvas.toDataURL("image/png")
@@ -167,6 +171,7 @@
 		newW.setTimeout(newW.print, 200)
 	})
 
+	// 报告中 取消按钮的事件绑定
 	result_div.children[2].addEventListener("click", e => {
 		e.preventDefault()
 		toggle_result(false)
@@ -180,14 +185,16 @@
 	})
 
 	// 管理功能切换事件绑定
-	for ( nav_btn of aside_nav ) {
+	for ( let i = 0; i < aside_nav.length; i ++ ) {
+		let nav_btn = aside_nav[i]
 		nav_btn.addEventListener("click", e => {
 			e.preventDefault()
 			let target = e.srcElement || e.target
 			if ( target.tagName == "SPAN" ) {
 				target = target.parentElement;
 			}
-			for ( let ele of aside_list ) {
+			for ( let j = 0; j < aside_list.length; j ++ ) {
+				let ele = aside_list[j]
 				ele.setAttribute("class", "aside_list")
 				if ( ele == target.parentElement)
 					ele.setAttribute("class", "aside_list aside_selected")
@@ -199,7 +206,8 @@
 	}
 
 	// 导航栏的按钮切换view的事件绑定
-	for ( let btn of nav_btns ) {
+	for ( let i = 0; i < nav_btns.length; i ++ ) {
+		let btn = nav_btns[i]
 		btn.addEventListener("click", e => {
 			e.preventDefault()
 			if ( intest == 1 ) { 
@@ -214,7 +222,8 @@
 	}
 
 	// 和上面导航栏切换一样的绑定, 只不过是建立了点击映射
-	for ( let btn of op_btns ) {
+	for ( let i = 0; i < op_btns.length; i ++ ) {
+		let btn = op_btns[i]
 		// 这里直接将操作区的按钮和上面的导航按钮建立联系
 		let index = btn.getAttribute("data-map");
 		if (index !== "0") {
@@ -233,13 +242,14 @@
 	}
 
 	// 登录和注册的面板切换的事件绑定
-	for ( let btn of action_switch.children ) {
+	for ( let i = 0; i < action_switch.children.length; i ++ ) {
+		let btn = action_switch.children[i]
 		let role = btn.getAttribute("data-role");
 		btn.addEventListener("click", e => {
 			e.preventDefault();
 			panel_switch(role);
-			for ( let btn of action_switch.children ) {
-				btn.removeAttribute("class")
+			for ( let j = 0; j < action_switch.children.length; j ++ ) {
+				action_switch.children[j].removeAttribute("class")
 			}
 			btn.setAttribute("class", "current_action")
 		})
@@ -284,7 +294,8 @@
 				}
 				video.children[0].setAttribute("src", e.target.getAttribute("link"))
 				video.load()
-				for ( node of video_list.children[0].children) {
+				for ( let i = 0; i < video_list.children[0].children.length; i ++) {
+					let node = video_list.children[0].children[i]
 					node.removeAttribute("class")
 				}
 				target.setAttribute("class", "playing")
@@ -330,17 +341,14 @@
 	pdfs.addEventListener("click", e => {
 		e.preventDefault()
 		pdf = e.target || e.srcElement
+		for (let i = 0; i < pdfs.children.length; i ++) {
+			pdfs.children[i].setAttribute("class", "pdf");
+		}
 		if (pdf.getAttribute("class") == "pdf") {
-			for (each of pdfs.children) {
-				each.setAttribute("class", "pdf");
-			}
 			pdf.setAttribute("class", "pdf selected_pdf");
 			selected_pdf = pdf.getAttribute("link");
 		}
 		else {
-			for (each of pdfs.children) {
-				each.setAttribute("class", "pdf");
-			}
 			selected_pdf = null;
 		}
 	})
@@ -448,7 +456,8 @@
 	function _fetch_video(res) {
 		videos = res['data']
 		html = "<ul>"
-		for (let video of videos) {
+		for (let i = 0; i < videos.length; i ++) {
+			let video = videos[i]
 			html += `<li class="" link=http://127.0.0.1:5000/${video[1]}><span class="seen_token">○</span>${video[0]}</li>`
 		}
 		html += "</ul>"
@@ -561,7 +570,8 @@
 		let raw_data = res['data']
 		let html = "";
 		let question_no = 1;
-		for ( let question_item of raw_data ) {
+		for ( let i = 0; i < raw_data.length; i++ ) {
+			let question_item = raw_data[i]
 			let selection_no = 1
 			// 渲染题目
 			html += `<div class="question_item" data-id="${question_item['qid']}">
@@ -570,7 +580,8 @@
 				</div>
 				<div class="question_radio">`
 			// 渲染选项
-			for ( let selection of question_item['selections'] ) {
+			for ( let j = 0; j < question_item['selections'].length; j++ ) {
+				let selection = question_item['selections'][j]
 				html += `<p><input type="radio" data-role="${selection_no}" class="answer_radio"><label>${selection}</label></p>`
 				selection_no += 1
 			}
@@ -607,7 +618,8 @@
 	function panel_switch(role) {
 		clear_login()
 		submit_login.setAttribute("data-action", role)
-		for ( let part of login_part ) {
+		for ( let i = 0; i < login_part.length; i ++ ) {
+			let part = login_part[i]
 			part.style["display"] = role == "login" ? "none" : "block"
 		}
 
@@ -619,7 +631,8 @@
 	 * @return {[type]}              [description]
 	 */
 	function btn_switch(selected_btn) {
-		for ( let btn of nav_btns ) {
+		for ( let i = 0; i < nav_btns.length; i++ ) {
+			let btn = nav_btns[i]
 			btn.setAttribute("class", "nav_btn");
 		}
 		selected_btn.setAttribute("class", "nav_btn selected")
@@ -721,7 +734,8 @@
 		}
 		else {
 			// 填充验证
-			for ( let ele of login ) {
+			for ( let i = 0; i < login.length; i ++ ) {
+				let ele = login[i]
 				if (ele.value == "") {
 					alert(ele.placeholder+"不能为空");
 					return;
@@ -845,12 +859,12 @@
 	 */
 	function make_data(form) {
 		data = ""
-		for ( let entry of form.entries() ) {
-			data += entry[0]
+		form.forEach( function(v, k) {
+			data += k
 			data += "="
-			data += entry[1]
+			data += v
 			data += "&"
-		}
+		});
 		data = data.substr(0, data.length-1)
 		return data
 	}
@@ -943,7 +957,8 @@
 	 */
 	function toggle_login(toggle, register_only) {
 		mask.style['display'] = toggle == "1" ? "block" : "none";
-		for ( switcher of action_switch.children ) {
+		for ( let i = 0; i < action_switch.children.length; i ++ ) {
+			let switcher = action_switch.children[i]
 			switcher.style.display = "block"
 		}
 		if (toggle == "1") {
@@ -956,7 +971,8 @@
 		}
 		if (register_only) {
 			action_switch.children[0].click() // 点击注册按钮切换
-			for ( switcher of action_switch.children ) {
+			for ( let j = 0; j < action_switch.children.length; j ++ ) {
+				let switcher = action_switch.children[j]
 				switcher.style.display = "none"
 			}
 		}
@@ -1123,7 +1139,8 @@
 		// 填充具体的表格
 		if (action == "users") {
 			main_ele = ""
-			for ( user of res['data'] ) {
+			for ( let i = 0; i < res['data'].length; i ++ ) {
+				let user = res['data'][i]
 				main_ele += `<tr class="item_row" data-key="${user['info'][1]}"><td><input type="checkbox" data-name="" class="admin_checkbox"></td>`
 				// 先填充前面的用户信息
 				for ( let m = 0; m < user['info'].length; m ++ ) {
@@ -1160,7 +1177,8 @@
 				for ( let n = 0; n < res['data'][item].length; n ++ ) {
 					if ( n == 1 ) {
 						main_ele += `<td><div>`
-						for ( let selection of res['data'][item][n] ) {
+						for ( let i = 0; i < res['data'][item][n].length; i ++ ) {
+							let selection = res['data'][item][n][i]
 							main_ele += `<p>${selection}</p>`
 						}
 						main_ele += `</div></td>`
@@ -1214,7 +1232,8 @@
 
 	function bind_sp() {
 		let btns = document.getElementsByClassName("sp_btn");
-		for ( let btn of btns ) {
+		for ( let i = 0; i < btns.length; i ++ ) {
+			let btn = btns[i]
 			btn.addEventListener("click", e => {
 				e.preventDefault()
 				let t = e.target || e.srcElement
@@ -1232,7 +1251,8 @@
 		let boxes = document.getElementsByClassName("admin_checkbox")
 		if ( boxes[0].checked ) {
 			eles = document.getElementsByClassName("item_row")
-			for ( let ele of eles ) {
+			for ( let i = 0; i < eles.length; i ++ ) {
+				let ele = eles[i]
 				result.push(ele.dataset['key'])
 			}
 		}
@@ -1408,7 +1428,8 @@
 		else if ( state == "tests" ) {
 			type = "text/plain"
 		}
-		for ( let file of filelist ) {
+		for ( let i = 0; i < filelist.length; i ++ ) {
+			let file = filelist[i]
 			if ( file.type !== type ) return file.name
 			if ( file.size >= 209715200 ) return file.name // 文件大于200MB, 拒绝
 		}
@@ -1423,7 +1444,8 @@
 	function render_previewlist(filelist) {
 		console.log(filelist)
 		html = ""
-		for ( let file of filelist ) {
+		for ( let i = 0; i < filelist.length; i ++ ) {
+			let file = filelist[i]
 			html += `<div class="file_item"><span class="file_name">${file.name}</span><span class="upload_state">等待中</span></div>`
 		}
 		preview_area.innerHTML = html
@@ -1550,10 +1572,12 @@
 	function check_struct(raw_data) {
 		let result = []
 		let questions = raw_data.split(/\n(\n)*\n/)
-		for ( let q of questions ) {
+		for ( let i = 0; i < questions.length; i++ ) {
+			let q = questions[i]
 			flag = false
 			if (q && q !== "\n") {
-				for (let s of q.split("\n")) {
+				for (let j = 0; j < q.split("\n").length; j ++) {
+					let s = q.split("\n")[j]
 					if ( s.startsWith("*") ) flag = true
 				}
 				if ( !flag ) return []
@@ -1608,12 +1632,14 @@
 	 */
 	function bind_radio() {
 		let radios = document.getElementsByClassName("answer_radio")
-		for ( let radio of radios ) {
+		for ( let i = 0; i < radios.length; i ++ ) {
+			let radio = radios[i]
 			radio.addEventListener("click", e => {
 				intest = 1;
 				let t = e.target || e.srcElement
 				let block = t.parentElement.parentElement
-				for ( let p of block.children ) {
+				for ( let j = 0; j < block.children.length; j++ ) {
+					let p = block.children[j]
 					p.children[0].checked = false
 				}
 				t.checked = true
@@ -1631,7 +1657,8 @@
 			intest = 0;
 			let items = question_section.children
 			user_pack = []
-			for ( let item of items ) {
+			for ( let i = 0; i < items.length; i ++ ) {
+				let item = items[i]
 				let tmp = [item.dataset['id']]
 				let ans = item.children[1].dataset['selected']
 				if ( ans ) {
@@ -1740,7 +1767,8 @@
 	 */
 	function clear_all() {
 		let radios = document.getElementsByClassName("answer_radio")
-		for ( let radio of radios ) {
+		for ( let i = 0; i < radios.length; i ++ ) {
+			let radio = radios[i]
 			radio.checked = false
 		}
 	}
