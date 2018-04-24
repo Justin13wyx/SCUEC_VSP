@@ -6,6 +6,7 @@
 	var test_area = document.getElementById("test_area");
 	var op_btns = document.getElementById('control_center').children
 	var curView = document.getElementsByClassName("current")[0];
+	var reminder = document.getElementById("reminder");
 
 	var btn2view = new Map()
 	btn2view.set("index", main_area)
@@ -77,6 +78,8 @@
 	var admin_state = ""
 	var files = [];
 	var send_queue = [];
+
+	window.onload = fetch_info
 
 	// 具体的管理功能事件绑定
 	for ( let i = 0; i < action_btns.length; i ++ ) {
@@ -436,8 +439,11 @@
 	 * @return {[type]} [description]
 	 */
 	function fetch_info() {
-		// fetch_data("GET", "http://127.0.0.1:5000/apiv1/")
-		// 暂时不考虑
+		fetch_data("GET", "http://127.0.0.1:5000/apiv1/index/fetchInfo", fill_reminder)
+	}
+
+	function fill_reminder(res) {
+		reminder.innerHTML = res['text']
 	}
 
 	/**
