@@ -116,7 +116,7 @@
 				data.set("passline", admin_input.children.pass.value)
 				data = make_data(data)
 				if (confirm("确定设置成" + admin_input.children.pass.value + "?"))
-					fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/setpass", check_setpass_state, data)
+					fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/admin/setpass", check_setpass_state, data)
 			}
 		})
 	}
@@ -314,7 +314,7 @@
 		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○")
 			max_view += 1
 		// 告诉服务端, 用户看完了
-		fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}`)
+		fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}`)
 		// 自动获取下一个的视频
 		video_list.children[0].children[max_view-1].children[0].innerHTML = "√"
 		video_list.children[0].children[max_view].click()
@@ -361,7 +361,7 @@
 		if (selected_pdf) {
 			window.open("http://127.0.0.1:5000/" + selected_pdf)
 			data = `username=${username}&ins=${selected_pdf}`
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
+			fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		}
 		else {
 			alert("你还没有选择阅读材料.");
@@ -401,7 +401,7 @@
 	 */
 	function active_admin() {
 		if (access) {
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/getToken", _active_admin, "username=" + username)
+			fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/admin/getToken", _active_admin, "username=" + username)
 			admin_area.style['transform'] = "scale3d(1, 1, 1)"
 		}
 		else alert("你还没有登录!")
@@ -439,7 +439,7 @@
 	 * @return {[type]} [description]
 	 */
 	function fetch_info() {
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/index/fetchInfo", fill_reminder)
+		fetch_data(false, "GET", "http://127.0.0.1:5000/apiv1/index/fetchInfo", fill_reminder)
 	}
 
 	function fill_reminder(res) {
@@ -451,7 +451,7 @@
 	 * @return {[type]} [description]
 	 */
 	function fetch_video() {
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/video/getVideoIndex", _fetch_video)
+		fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/video/getVideoIndex", _fetch_video)
 	}
 
 	/**
@@ -468,7 +468,7 @@
 		}
 		html += "</ul>"
 		video_list.innerHTML = html
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username=" + escape(username), highlight_videolist)
+		fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username=" + escape(username), highlight_videolist)
 	}
 
 	/**
@@ -530,7 +530,7 @@
 	 * @return {[type]} [description]
 	 */
 	function fetch_instruction() {
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction)
+		fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction)
 	}
 
 	/**
@@ -554,7 +554,7 @@
 	 */
 	function fetch_questions(res) {
 		if ( res['access'] == true ) {
-			fetch_data("GET", "http://127.0.0.1:5000/apiv1/test/getQuestions?mac_id=1", render_questions)
+			fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/test/getQuestions?mac_id=1", render_questions)
 		}
 		else {
 			alert("你还没有完成视频观看或者说明阅读要求!\n通过点击用户头像可以查看当前完成状态.")
@@ -652,8 +652,10 @@
 	* @param  {[type]}   data     POST的数据--类型:对象
 	* @param  {[type]}   error_callback 出现错误的时候调用的函数
 	*/
-	function fetch_data(method, url, callback, data, error_callback) {
-		toggle_loading(1)
+	function fetch_data(block, method, url, callback, data, error_callback) {
+		if (block) {
+			toggle_loading(1)
+		}
 		let xhr = new XMLHttpRequest();
 		xhr.open(method, url);
 		xhr.timeout = 9000;
@@ -736,7 +738,7 @@
 			// 注册信息组装
 			data = make_data(form)
 			// 发送注册请求
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doSignin", check_register_state, data, toggle_login)
+			fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/doSignin", check_register_state, data, toggle_login)
 		}
 		else {
 			// 填充验证
@@ -757,7 +759,7 @@
 			// 登录信息组装
 			data = make_data(form)
 			// 发送登录请求
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogin", check_login_state, data, toggle_login)
+			fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/doLogin", check_login_state, data, toggle_login)
 		}
 	}
 
@@ -851,7 +853,7 @@
 		if (confirm("确定登出?\n你的信息(包括测试)不会被保存!")) {
 			intest = 0;
 			data = "username=" + username
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/doLogout", check_logout_state, data)
+			fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/doLogout", check_logout_state, data)
 			toggle_tooltip(0)
 			nav_btns[0].click()
 		}
@@ -1002,7 +1004,7 @@
 	 */
 	function toggle_tooltip(toggle) {
 		if (toggle == "1") {
-			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null, toggle_tooltip)
+			fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null, toggle_tooltip)
 			tooltip.style['transform'] = "translate3d(0, 0, 0)"
 			// 由于这里需要调用toggle_loading 会导致mask消失
 			// 所以需要在后面调用
@@ -1062,7 +1064,7 @@
 	 * @return {[type]}     [description]
 	 */
 	function render_admin(api) {
-		fetch_data("POST", "http://127.0.0.1:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"))
+		fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"))
 	}
 
 	/**
@@ -1336,7 +1338,7 @@
 					data.set("state", admin_state)
 					data.set("target", target)
 					data = make_data(data)
-					fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/del", check_del_state, data)
+					fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/admin/del", check_del_state, data)
 				}
 				else
 					return;
@@ -1370,35 +1372,35 @@
 		// 删除用户
 		if ( action == "del" ) {
 			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
-				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/delUser", check_del_state, data)
+				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/delUser", check_del_state, data)
 			}
 			return;
 		}
 		// 冻结用户
 		if ( action == "deactive" ) {
 			if (confirm("是否冻结下面的用户?\n警告⚠️!同时会收回用户的管理员权限!\n\n" + target)) {
-				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/deactiveUser", check_admin_state, data)
+				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/deactiveUser", check_admin_state, data)
 			}
 			return;
 		}
 		// 激活用户
 		if ( action == "active" ) {
 			if (confirm("确定激活下面的用户?\n\n" + target)) {
-				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/activeUser", check_admin_state, data)
+				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/activeUser", check_admin_state, data)
 			}
 			return;
 		}
 		// 授权用户成为管理员
 		if ( action == "grant" ) {
 			if (confirm("确定授权下面的用户?\n警告⚠️!管理员权限很大!\n\n" + target)) {
-				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/grantUser", check_admin_state, data)
+				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/grantUser", check_admin_state, data)
 			}
 			return;
 		}
 		// 取消用户授权
 		if ( action == "ungrant" ) {
 			if (confirm("确定对下面的用户收回授权?\n\n" + target)) {
-				fetch_data("POST", "http://127.0.0.1:5000/apiv1/user/ungrantUser", check_admin_state, data)
+				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/ungrantUser", check_admin_state, data)
 			}
 		}
 	}
@@ -1604,7 +1606,7 @@
 			return;
 		}
 		// 发送data
-		fetch_data("POST", "http://127.0.0.1:5000/apiv1/admin/newQuestions", check_confirm_state, `state=${admin_state}&data=${question_input.value}`)
+		fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/admin/newQuestions", check_confirm_state, `state=${admin_state}&data=${question_input.value}`)
 	}
 
 	function check_confirm_state(res) {
@@ -1628,7 +1630,7 @@
 	 * @return {[type]} [description]
 	 */
 	function check_haveaccess2test() {
-		fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/canTest?user=" + username, fetch_questions)
+		fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/user/canTest?user=" + username, fetch_questions)
 	}
 
 	/**
@@ -1677,7 +1679,7 @@
 				}
 				user_pack.push(tmp)
 			}
-			fetch_data("POST", "http://127.0.0.1:5000/apiv1/test/uploadAnswers?user=" + username, check_answers, "answers=" + user_pack)
+			fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/test/uploadAnswers?user=" + username, check_answers, "answers=" + user_pack)
 		}
 	}
 
@@ -1720,7 +1722,7 @@
 		let user = _user || username
 		if ( toggle ) {
 			result.style['transform'] = "scale3d(1,1,1)";
-			fetch_data("GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(user), render_result)
+			fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(user), render_result)
 		}
 		else {
 			result.style['transform'] = "scale3d(0,0,0)"
