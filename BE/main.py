@@ -26,6 +26,14 @@ main_connector = db_connector.DBConnector("./scuec_vsp")
 test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
 
 
+@app.route(prefix.format("index", "fetchInfo"), methods=['GET'])
+def get_reminder():
+    text = main_connector.get_attr("reminder", "machineid", machine_id, ("text", )).fetchone()[0]
+    if not text:
+        return pack_response(4, "error", text="数据获取失败")
+    return pack_response(0, "ok", text=text)
+
+
 @app.route(prefix.format("user", "doSignin"), methods=["POST"])
 def register():
     user_info = request.form.to_dict()
@@ -428,7 +436,14 @@ def receive_files():
 
 
 def write2db(data):
-    text_data = data.decode("utf-8")
+    # 这个地方注意windows的问题, 有可能用户上传的是gbk编码的, 也可能是utf-8编码的
+    try:
+        text_data = data.decode("utf-8")
+    except UnicodeDecodeError:
+        # 那么就猜测是gbk, 当然这里应该更加准确的判断
+        text_data = data.decode("gbk")
+    # 过滤一下windows的BOM和\r
+    text_data = text_data.replace("\r", "").replace("\ufeff", "")
     questions = text_data.split("\n\n")
     selection_id = test_connector.get_attr("sqlite_sequence", "name", "selections", ("seq", )).fetchone()
     if not selection_id:
