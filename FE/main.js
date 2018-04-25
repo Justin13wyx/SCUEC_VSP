@@ -432,6 +432,7 @@
 		localStorage.removeItem("token")
 		admin_state = ""
 		admin_area.style['transform'] = "scale3d(1, 0, 1)"
+		nav_btns[0].click()
 	}
 
 	/**
@@ -1130,6 +1131,9 @@
 		if (action == "tests") {
 			rule = [3, 5, 35, 35, 17]
 		}
+		if (action == "reminders") {
+			rule = [3, 5, 35, 10]
+		}
 		// 填充位置约束的colgroup
 		rule_ele = ""
 		for ( let i = 0; i < rule.length; i ++ ) {
@@ -1201,9 +1205,19 @@
 					main_ele += `<td>${res['data'][item][n]}</td>`
 				}
 			}
+			if ( action == "reminders" ) {
+				main_ele += `<td><button class="op_btn">修改</button></td>` 
+			}
 			main_ele += "</tr>"
 		}
 		desc_area_body.children[1].innerHTML = main_ele
+		desc_area_body.children[1].getElementsByTagName("button")[0].onclick = changereminder
+		if ( action == "reminders" ) {
+			for ( let btn = 0; btn < action_btns.length; btn ++ ) {
+				action_btns[btn].setAttribute("class", "action_btn action_disable")
+			}
+			return;
+		}
 		// 调整上方操作按钮
 		for ( let btn = 0; btn < action_btns.length; btn ++ ) {
 			action_btns[btn].setAttribute("class", "action_btn")
@@ -1450,7 +1464,6 @@
 	 * @return {[type]}          [description]
 	 */
 	function render_previewlist(filelist) {
-		console.log(filelist)
 		html = ""
 		for ( let i = 0; i < filelist.length; i ++ ) {
 			let file = filelist[i]
@@ -1578,6 +1591,9 @@
 	 * @return {[type]} [description]
 	 */
 	function check_struct(raw_data) {
+		// if (filterSqlStr(raw_data)) {
+
+		// }
 		let result = []
 		let questions = raw_data.split(/\n(\n)*\n/)
 		for ( let i = 0; i < questions.length; i++ ) {
@@ -1767,6 +1783,22 @@
 	function clear_result() {
 		mask.style['display'] = "none"
 		result_context.clearRect(0, 0, result_canvas.width, result_canvas.height)
+	}
+
+	function changereminder(e) {
+		let t = e.target || e.srcElement
+		let reminder_in = t.parentElement.parentElement.children[2]
+		let macid = t.parentElement.parentElement.children[1].innerHTML
+		if ( t.innerHTML == "确定" ) {
+			let new_reminder = reminder_in.children[0].value
+			fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/admin/setReminder?machineID=" + macid, check_admin_state, `state=${admin_state}&token=${localStorage.getItem("token")}&reminder=${new_reminder}`)
+		}
+		if ( t.innerHTML == "修改" ) {
+			let origin_reminder = reminder_in.innerHTML
+			reminder_in.innerHTML = `<input id="reminder_in" name="reminder" type="text">`
+			t.parentElement.parentElement.children[2].children[0].value = origin_reminder
+			t.innerHTML = "确定"
+		}
 	}
 
 	/**
