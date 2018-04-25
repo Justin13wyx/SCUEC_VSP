@@ -28,7 +28,7 @@ test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
 
 @app.route(prefix.format("index", "fetchInfo"), methods=['GET'])
 def get_reminder():
-    text = main_connector.get_attr("reminder", "machineid", machine_id, ("text", )).fetchone()[0]
+    text = main_connector.get_attr("reminders", "machineid", machine_id, ("text", )).fetchone()[0]
     if not text:
         return pack_response(4, "error", text="数据获取失败")
     return pack_response(0, "ok", text=text)
@@ -433,6 +433,29 @@ def receive_files():
     with open(path.join(dest, filename), mode="wb") as f:
         f.write(raw_data)
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("admin", "reminders"), methods=['POST'])
+def push_reminders():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    title = ["机器ID", "通知信息", "操作"]
+    content = main_connector.get_all("reminders").fetchall()
+    data = []
+    for reminder in content:
+        data.append(reminder[1:])
+    return pack_response(0, "ok", access=True, title=title, data=data, attr="reminders")
+
+
+@app.route(prefix.format("admin", "setReminder"), methods=['POST'])
+def set_reminder():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    mac_id = request.args.get("machineID")
+    main_connector.update_attr("reminders", "machineid", mac_id, {"text": request.values.get("reminder")})
+    return pack_response(0, "ok", access=True, api="/admin/%s" % request.values.get("state"))
 
 
 def write2db(data):

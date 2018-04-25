@@ -37,8 +37,8 @@ class DBConnector:
         try:
             result_cursor = self.cursor.execute(sql)
         except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
-            # print(sql)
-            # print(e)
+            print(sql)
+            print(e)
             return False
         return result_cursor
 
