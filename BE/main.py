@@ -38,18 +38,17 @@ def get_reminder():
 def register():
     user_info = request.form.to_dict()
     # 尝试写入数据库
-    info_keys = list(user_info.keys())
-    info_values = list(user_info.values())
+    secret = user_info.pop("secret")
     try:
-        result = main_connector.set_attr("user_info", tuple(info_keys[:3]), tuple(info_values[:3]))  # 设置用户信息
+        result = main_connector.set_attr("user_info", tuple(user_info.keys()), tuple(user_info.values()))  # 设置用户信息
     except (db_connector.OperationalError, db_connector.IntegrityError) as error:
         if "UNIQUE" in str(error) and "username" in str(error):
             return pack_response(-4, "duplicate username")
         return pack_response(-1, "database written failed!")
     if result:
         # 用户信息设置成功, 设置密码记录
-        result = main_connector.set_attr("secret", ("username", info_keys[3],),
-                                       (user_info['username'], db_connector.hash_passwd(info_values[3]),))
+        result = main_connector.set_attr("secret", ("username", "secret",),
+                                       (user_info['username'], db_connector.hash_passwd(secret,)))
     if result:
         # 初始化用户状态
         result = main_connector.set_attr("user_state", ("username",), (user_info['username'],))
@@ -92,7 +91,7 @@ def login():
     if true_secret == secret:  # 密码匹配, 登陆成功
         session['username'] = username
         res = pack_response(0, "ok", username=username, root=user_id[1])
-        res.set_cookie("uid", value=username, max_age=10086)
+        res.set_cookie("uid", value=username, domain="dev.localhost", path="/")
         return res
     else:
         return pack_response(1, "wrong password")
