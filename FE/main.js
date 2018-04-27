@@ -1211,7 +1211,8 @@
 			main_ele += "</tr>"
 		}
 		desc_area_body.children[1].innerHTML = main_ele
-		desc_area_body.children[1].getElementsByTagName("button")[0].onclick = changereminder
+		if ( admin_state == "reminders" )
+			desc_area_body.children[1].getElementsByTagName("button")[0].onclick = changereminder
 		if ( action == "reminders" ) {
 			for ( let btn = 0; btn < action_btns.length; btn ++ ) {
 				action_btns[btn].setAttribute("class", "action_btn action_disable")
