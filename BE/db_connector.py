@@ -21,14 +21,16 @@ class DBConnector:
         self.conn = sqlite3.connect(db, check_same_thread=False)
         self.cursor = self.conn.cursor()
 
-    def get_all(self, table):
+    def get_all(self, table, keyword=None, value=None):
         sql = "SELECT * FROM {}".format(str(table))
+        if keyword:
+            sql = "SELECT * FROM {} WHERE {}='{}'".format(str(table), keyword, value)
         try:
             result_cursor = self.cursor.execute(sql)
         except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
             # print(sql)
             # print(e)
-            return False
+            return None
         return result_cursor
 
     def get_attr(self, table, keyword, value, fields):
@@ -39,7 +41,7 @@ class DBConnector:
         except (sqlite3.IntegrityError, sqlite3.OperationalError) as e:
             print(sql)
             print(e)
-            return False
+            return None
         return result_cursor
 
     def set_attr(self, table, keywords, attributes):
