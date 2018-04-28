@@ -289,8 +289,6 @@ def check_answers():
     score = 0
     for index in range(len(questions)):
         ques_info = test_connector.get_attr("questions", "id", questions[index], ("answer", "score", )).fetchall()[0]
-        print(answer[index])
-        print(ques_info[0])
         if int(answer[index]) == int(ques_info[0]):
             score += ques_info[1]
     # 同时更新用户状态表
@@ -432,6 +430,28 @@ def receive_files():
     with open(path.join(dest, filename), mode="wb") as f:
         f.write(raw_data)
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+@app.route(prefix.format("admin", "searchUser"), methods=['POST'])
+def search4user():
+    access = verify_token(request.values.get("token"))
+    if access[0] < 0:
+        return pack_response(access[0], access[1], access=False)
+    querystring = request.values.get("query")
+    title = ["ID", "用户名", "真实姓名", "邮箱", "是管理员", "是否激活", "用户状态"]
+    data = []
+    info = main_connector.get_all("user_info", "username", querystring).fetchall()
+    if not info:
+        info = main_connector.get_all("user_info", "truename", querystring).fetchall()
+    if not info:
+        return pack_response(233, "non exists", data=data, attr="users", access=True)
+    querystring = info[0][1]
+    state = main_connector.get_all("user_state", "username", querystring).fetchall()
+    require = main_connector.get_all("machine_requirement").fetchall()[0][1:]
+    for k, v in zip(info, state):
+        tmp = {"info": k, "state": v[2:]}
+        data.append(tmp)
+    return pack_response(0, "ok", title=title, require=require, data=data, attr="users", access=True)
 
 
 @app.route(prefix.format("admin", "reminders"), methods=['POST'])

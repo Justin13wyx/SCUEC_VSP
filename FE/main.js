@@ -23,6 +23,7 @@
 	var close_btn = document.getElementById("icon-close");
 	var aside_nav = document.getElementsByClassName("aside_select");
 	var aside_list = document.getElementsByClassName("aside_list");
+	var search_bar = document.getElementsByClassName("action_bar")[0];
 	var action_btns = document.getElementsByClassName("action_btn");
 	var control_btns = document.getElementById("admin_control").children;
 	var admin_inputbox = document.getElementById("admin_inputbox");
@@ -35,7 +36,8 @@
 	var question_btns = document.getElementsByClassName("control_btn");
 	var question_input = document.getElementById("manual_question")
 	var question_section = document.getElementById("question_section");
-	var test_control = document.getElementsByClassName("test_control_area")[0].children;
+	var test_control_area = document.getElementsByClassName("test_control_area")[0];
+	var test_control = test_control_area.children;
 
 	var video = document.getElementById("video_play");
 	var video_list = document.getElementById("video_list")
@@ -598,6 +600,7 @@
 		}
 		question_section.innerHTML = html
 		bind_radio()
+		test_control_area.style['display'] = "flex";
 	}
 
 	/**
@@ -1172,7 +1175,7 @@
 				main_ele += `</tr>`
 			}
 			desc_area_body.children[1].innerHTML = main_ele
-			// disable最后一个按钮
+			// disable设置及格线按钮
 			for ( let btn = 0; btn < action_btns.length; btn ++ ) {
 				action_btns[btn].setAttribute("class", "action_btn")
 			}
@@ -1272,6 +1275,7 @@
 	function check_target() {
 		let result = [];
 		let boxes = document.getElementsByClassName("admin_checkbox")
+		if (boxes.length == 0) return result;
 		if ( boxes[0].checked ) {
 			eles = document.getElementsByClassName("item_row")
 			for ( let i = 0; i < eles.length; i ++ ) {
@@ -1373,6 +1377,21 @@
 			toggle_login(1, true)
 			return;
 		}
+		// 用户搜索
+		if ( action == "search" ) {
+			let username = search_bar.value
+			search_bar.value = ""
+			if ( username.legnth == 0 ) return;
+			if (filterSqlStr(username) && validate(username)) {
+				let data = new Map()
+				data.set("query", username)
+				data.set("token", localStorage.getItem("token"))
+				data.set("state", admin_state)
+				data = make_data(data)
+				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/admin/searchUser", re_renderuser, data)
+			}
+			return;
+		}
 		let data = new Map()
 		target = check_target()
 		if (target.length == 0) {
@@ -1417,6 +1436,15 @@
 			if (confirm("确定对下面的用户收回授权?\n\n" + target)) {
 				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/ungrantUser", check_admin_state, data)
 			}
+		}
+	}
+
+	function re_renderuser(res) {
+		if (res['code'] == 233) {
+			alert("搜索不到这个用户")
+		}
+		else {
+			_render_admin(res)
 		}
 	}
 
@@ -1706,6 +1734,7 @@
 			display += `<button class="op_btn result_btn" data-action="display">查看成绩单</button>`
 			display += `<button class="op_btn result_btn" data-action="retest">重新测试</button>`
 			question_section.innerHTML = display
+			test_control_area.style['display'] = "none";
 			bind_test_action()
 		}
 		else {

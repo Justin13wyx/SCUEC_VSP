@@ -552,7 +552,7 @@ footer > #copyright {
 	flex-direction: row;
 }
 
-.action_btn {
+.action_bar, .action_btn {
 	padding: 5px 15px;
 	margin: 0 5px;
 	border-radius: 3px;
@@ -564,7 +564,7 @@ footer > #copyright {
 	transition: all 0.4s;
 }
 
-.action_btn:hover {
+.action_bar:hover, .action_btn:hover {
 	color: #fff;
 	background-color: rgb(77, 77, 77);
 }
