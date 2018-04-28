@@ -841,6 +841,7 @@
 			max_view = 0;
 			max_viewtime = 0;
 			selected_pdf = null;
+			logout_btn.blur();
 		}
 		else {
 			alert("登出失败! 请稍后尝试.")
@@ -1118,6 +1119,7 @@
 	 * @return {[type]}     [description]
 	 */
 	function _render_admin(res) {
+		search_bar.value = ""
 		desc_area_head.children[1].innerHTML = ""
 		desc_area_body.children[1].innerHTML = ""
 		if (!access_test(res)) return;
