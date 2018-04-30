@@ -244,24 +244,6 @@ header > #navigator {
 	transition: all 0.3s;
 }
 
-footer {
-	display: flex;
-	position: fixed;
-	width: 100%;
-	bottom: 0;
-	align-items: center;
-	flex-direction: column;
-}
-
-footer > #copyright {
-	display: flex;
-	align-items: center;
-	font-size: 15px;
-	padding: 7px 10px 0 10px;
-	border-radius: 5px 5px 0 0;
-	background-color: rgb(236, 236, 236);
-}
-
 #loading_token {
 	position: absolute;
 	top: 50%;

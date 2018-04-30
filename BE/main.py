@@ -78,8 +78,6 @@ def login():
     # 哈希传过来的密码
     secret = db_connector.hash_passwd(login_info['secret'])
     user_id = main_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
-    if username in session:  # 如果在会话中, 直接确认
-        return pack_response(0, "ok", username=username, root=user_id[1])
     # 数据库尝试抓取用户ID
     if not user_id:
         # 抓取失败, 不存在用户记录
@@ -89,7 +87,7 @@ def login():
     # 获取该用户的密码
     true_secret = main_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
     if true_secret == secret:  # 密码匹配, 登陆成功
-        session['username'] = username
+        # session[username] = 1
         res = pack_response(0, "ok", username=username, root=user_id[1])
         res.set_cookie("uid", value=username, domain="dev.localhost", path="/")
         return res
@@ -115,6 +113,7 @@ def rm_user():
             main_connector.remove_attr("secret", "username", user)  # 删除用户密码
             main_connector.remove_attr("user_state", "username", user)  # 删除用户状态信息
             main_connector.remove_attr("instruction_record", "username", user)  # 删除用户文档阅读信息
+            # session.pop(user)
         except (db_connector.IntegrityError, db_connector.OperationalError):
             return pack_response(-1, "Error", api="/admin/%s" % request.values.get("state"))
     main_connector.commit()
@@ -178,6 +177,8 @@ def ungrant_user():
 @app.route(prefix.format("user", "canTest"), methods=['GET'])
 def check_access2test():
     username = request.args.get("user")
+    # if username not in session:
+    #     return pack_response(886, "not in session", action="refresh")
     info = main_connector.get_attr("user_state", "username", username, ("videopass", "instructionpass", )).fetchall()[0]
     require = main_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire", "instructionrequire")).fetchall()[0]
     if info[0] >= require[0] and info[1] >= require[1]:
@@ -188,6 +189,8 @@ def check_access2test():
 @app.route(prefix.format("user", "fetchInfo"), methods=["GET"])
 def push_info():
     username = unquote(request.values.get("username"))
+    # if username not in session:
+    #     return pack_response(886, "not in session", action="refresh")
     truename = main_connector.get_attr("user_info", "username", username, ("truename",)).fetchone()
     result_set = main_connector.get_attr("user_state", "username", username,
                                        ("videopass", "instructionpass", "score", "havetest",)).fetchall()
@@ -199,6 +202,8 @@ def push_info():
 @app.route(prefix.format("user", "updateVideoIndex"), methods=["POST"])
 def after_watching():
     user = request.values.get('username')
+    # if user not in session:
+    #     return pack_response(886, "not in session", action="refresh")
     passed = int(request.form['video_pass'])
     if main_connector.update_attr("user_state", "username", user, {"videopass": passed}):
         video_require = main_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire",)).fetchall()[0]
@@ -209,6 +214,8 @@ def after_watching():
 @app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
 def after_opening():
     user = request.values.get("username")
+    # if user not in session:
+    #     return pack_response(886, "not in session", action="refresh")
     read_item = request.form['ins']
     haveread = main_connector.get_attr("instruction_record", "username", user, ("haveread",)).fetchall()
     if haveread:
@@ -284,6 +291,8 @@ def push_questions():
 def check_answers():
     user_answer = request.values.get("answers").split(",")
     username = request.args.get("user")
+    # if username not in session:
+    #     return pack_response(886, "not in session", action="refresh")
     answer = user_answer[1::2]
     questions = user_answer[::2]
     score = 0
@@ -303,6 +312,8 @@ def check_answers():
 @app.route(prefix.format("admin", "getToken"), methods=['POST'])
 def validate_user():
     user = request.values.get("username")
+    # if user not in session:
+    #     return pack_response(886, "not in session", action="refresh")
     access = main_connector.get_attr("user_info", "username", user, ("isroot", "isactive",)).fetchall()[0]
     if access[0] == 0:
         return pack_response(233, "No access", access=False)
