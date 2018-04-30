@@ -318,6 +318,10 @@
 		// 告诉服务端, 用户看完了
 		fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}`)
 		// 自动获取下一个的视频
+		if ( max_view >= video_list.children[0].children.length-1 ) {
+			video.pause()
+			return;
+		}
 		video_list.children[0].children[max_view-1].children[0].innerHTML = "√"
 		video_list.children[0].children[max_view].click()
 		video.play()
