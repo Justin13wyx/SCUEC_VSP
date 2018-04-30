@@ -361,7 +361,7 @@
 	// 开始阅读的事件绑定
 	read_trigger.addEventListener("click", e => {
 		if (selected_pdf) {
-			window.open("http://127.0.0.1:5000/" + selected_pdf)
+			var pdf_win = window.open("http://127.0.0.1:5000/" + selected_pdf)
 			data = `username=${username}&ins=${selected_pdf}`
 			fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		}
@@ -836,7 +836,6 @@
 	function check_logout_state(res) {
 		if (res['code'] == "0") {
 			greeting.innerHTML = "请先登录!"
-			alert("登出成功!")
 			access = 0;
 			max_view = 0;
 			max_viewtime = 0;
@@ -1407,6 +1406,10 @@
 		data = make_data(data)
 		// 删除用户
 		if ( action == "del" ) {
+			if ( target == username ) {
+				alert("你不能删除自己!");
+				return;
+			}
 			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
 				fetch_data(true, "POST", "http://127.0.0.1:5000/apiv1/user/delUser", check_del_state, data)
 			}
