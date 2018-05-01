@@ -525,7 +525,7 @@
 	}
 
 	/**
-  * 说明材料列表抓取和对应的地址
+  * 文档列表抓取和对应的地址
   * @return {[type]} [description]
   */
 	function fetch_instruction() {

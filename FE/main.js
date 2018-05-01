@@ -533,7 +533,7 @@
 	}
 
 	/**
-	 * 说明材料列表抓取和对应的地址
+	 * 文档列表抓取和对应的地址
 	 * @return {[type]} [description]
 	 */
 	function fetch_instruction() {
@@ -811,7 +811,7 @@
 		if (res['code'] == '0') {
 			// 登陆成功
 			username = res['username']
-			greeting.innerHTML = "欢迎," + res['username']
+			greeting.innerHTML = "欢迎," + res['truename']
 			access = 1
 			toggle_login(0)
 		}
@@ -1410,8 +1410,8 @@
 		data = make_data(data)
 		// 删除用户
 		if ( action == "del" ) {
-			if ( target == username ) {
-				alert("你不能删除自己!");
+			if ( target.includes(username) ) {
+				alert("你不能删除自己! 请去除对当前用户的选择.");
 				return;
 			}
 			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
