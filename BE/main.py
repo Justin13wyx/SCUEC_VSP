@@ -39,11 +39,15 @@ def register():
     user_info = request.form.to_dict()
     # 尝试写入数据库
     secret = user_info.pop("secret")
+    if "state" in user_info:
+        state = user_info.pop("state")
+        token = user_info.pop("token")
     try:
         result = main_connector.set_attr("user_info", tuple(user_info.keys()), tuple(user_info.values()))  # 设置用户信息
     except (db_connector.OperationalError, db_connector.IntegrityError) as error:
         if "UNIQUE" in str(error) and "username" in str(error):
             return pack_response(-4, "duplicate username")
+        print(error)
         return pack_response(-1, "database written failed!")
     if result:
         # 用户信息设置成功, 设置密码记录
@@ -68,7 +72,7 @@ def register():
         main_connector.remove_attr("secret", "username", user_info['username'])
         main_connector.remove_attr("user_state", "username", user_info['username'])
         main_connector.remove_attr("instruction_record", "username", user_info['username'])
-        return pack_response(-1, "database written failed!")
+        return pack_response(-1, "database written failed!{F}")
 
 
 @app.route(prefix.format("user", "doLogin"), methods=["POST"])
@@ -77,7 +81,7 @@ def login():
     username = login_info['username']
     # 哈希传过来的密码
     secret = db_connector.hash_passwd(login_info['secret'])
-    user_id = main_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive",)).fetchone()
+    user_id = main_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive", "truename", )).fetchone()
     # 数据库尝试抓取用户ID
     if not user_id:
         # 抓取失败, 不存在用户记录
@@ -88,8 +92,8 @@ def login():
     true_secret = main_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
     if true_secret == secret:  # 密码匹配, 登陆成功
         # session[username] = 1
-        res = pack_response(0, "ok", username=username, root=user_id[1])
-        res.set_cookie("uid", value=username, domain="dev.localhost", path="/")
+        res = pack_response(0, "ok", username=username, truename=user_id[-1], root=user_id[1])
+        res.set_cookie("uid", value=username, path="/")
         return res
     else:
         return pack_response(1, "wrong password")
@@ -406,6 +410,7 @@ def delete_item():
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
     if request.values.get("state") == "tests":
+        print(request.form)
         test_connector.remove_attr("questions", "title", request.values.get("target"), commit=True)
         return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
     base_path = path.join(BASEPATH, request.values.get("state"), str(machine_id))
