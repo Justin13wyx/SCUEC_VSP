@@ -1,4 +1,5 @@
 import os
+import re
 
 import db_connector
 from flask import Flask, request, jsonify, session, send_file, make_response
@@ -52,7 +53,7 @@ def register():
     if result:
         # 用户信息设置成功, 设置密码记录
         result = main_connector.set_attr("secret", ("username", "secret",),
-                                       (user_info['username'], db_connector.hash_passwd(secret,)))
+                                       (user_info['username'], db_connector.hash_string(secret,)))
     if result:
         # 初始化用户状态
         result = main_connector.set_attr("user_state", ("username",), (user_info['username'],))
@@ -80,7 +81,7 @@ def login():
     login_info = request.form.to_dict()
     username = login_info['username']
     # 哈希传过来的密码
-    secret = db_connector.hash_passwd(login_info['secret'])
+    secret = db_connector.hash_string(login_info['secret'])
     user_id = main_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive", "truename", )).fetchone()
     # 数据库尝试抓取用户ID
     if not user_id:
@@ -275,6 +276,14 @@ def push_instruction(machine_id, instruction):
     return res
 
 
+@app.route("/images/<string:img_name>")
+def push_image(img_name):
+    image_path = path.join(BASEPATH, "tests", img_name)
+    res = send_file(image_path)
+    res.headers['Access-Control-Allow-Origin'] = "*"
+    return res
+
+
 @app.route(prefix.format("test", "getQuestions"), methods=['GET'])
 def push_questions():
     mac_id = request.args.get("mac_id")
@@ -383,7 +392,7 @@ def admin_tests():
     data = []
     for question in raw_data:
         selections = []
-        tmp = [question[1]]
+        tmp = [question[0], question[1]]
         for selection_id in question[2].split(","):
             selections.append(test_connector.get_attr("selections", "id", int(selection_id), ("content", )).fetchone()[0])
         tmp.append(selections)
@@ -410,8 +419,8 @@ def delete_item():
     if access[0] < 0:
         return pack_response(access[0], access[1], access=False)
     if request.values.get("state") == "tests":
-        print(request.form)
-        test_connector.remove_attr("questions", "title", request.values.get("target"), commit=True)
+        for qid in request.values.get("target").split(","):
+            test_connector.remove_attr("questions", "id", qid, commit=True)
         return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
     base_path = path.join(BASEPATH, request.values.get("state"), str(machine_id))
     items = request.values.get("target").split(",")
@@ -439,7 +448,12 @@ def receive_files():
         res.headers['Access-Control-Allow-Origin'] = "*"
         return res
     if request.values.get("state") == "tests":
-        return write2db(request.get_data())
+        # 在这里把图片和文本分离
+        filename = request.values.get("filename")
+        if filename.endswith("png" or "jpg" or "gif" or "jpeg"):
+            return save_pic(filename, request.get_data())
+        if filename.endswith("txt"):
+            return write2db(request.get_data())
     dest = path.join(BASEPATH, request.values.get("state"), str(machine_id))
     raw_data = request.get_data()
     filename = request.values.get("filename")
@@ -504,11 +518,13 @@ def write2db(data):
     text_data = text_data.replace("\r", "").replace("\ufeff", "")
     questions = text_data.split("\n\n")
     selection_id = test_connector.get_attr("sqlite_sequence", "name", "selections", ("seq", )).fetchone()
+    pattern = re.compile(r"\[img:(?P<img_name>.*)\]")
     if not selection_id:
         selection_id = 1
     else:
         selection_id = selection_id[0] + 1
     for question in questions:
+        question = pattern.sub(r"<img src='http://localhost:5000/images/\g<img_name>'>", question)
         items = question.split("\n")
         title = items[0]
         start_id = selection_id
@@ -519,7 +535,6 @@ def write2db(data):
             tmp += 1
             try:
                 if selection.startswith("*"):
-                    print(tmp)
                     selection = selection.split(" ", maxsplit=1)[-1]
                     right_id = tmp
                 test_connector.set_attr("selections", ("id", "content",), (selection_id, selection, ))
@@ -530,10 +545,17 @@ def write2db(data):
         # 选项全部写入数据库之后
         try:
             test_connector.set_attr("questions", ("title", "selections", "answer", ), (title, ",".join([str(x) for x in range(start_id, selection_id)]), str(right_id)))
-        except (db_connector.OperationalError, db_connector.IntegrityError) as error:
+        except (db_connector.OperationalError, db_connector.IntegrityError, UnboundLocalError) as error:
             print(error)
             return pack_response(1, "error")
     return pack_response(0, "ok", api="/admin/%s" % request.values.get("state"), access=True)
+
+
+def save_pic(filename, bin_data):
+    destination = path.join(BASEPATH, "tests", filename)
+    with open(destination, "wb") as f:
+        f.write(bin_data)
+    return pack_response(0, "ok", access=True)
 
 
 def get_token(obj):
