@@ -1,5 +1,3 @@
-"use strict";
-
 (function () {
 	var nav_btns = document.getElementsByClassName("nav_btn");
 	var main_area = document.getElementById("main");
@@ -578,7 +576,7 @@
 			var question_item = raw_data[_i16];
 			var selection_no = 1;
 			// 渲染题目
-			html += "<div class=\"question_item\" data-id=\"" + question_item['qid'] + "\">\n\t\t\t\t<div class=\"question_title\">\n\t\t\t\t\t<p>" + question_no + "." + question_item['question'] + "</p>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"question_radio\">";
+			html += "<div class=\"question_item\" data-id=\"" + question_item['qid'] + "\">\n\t\t\t\t<div class=\"question_title\">\n\t\t\t\t\t<p style=\"display: flex;\">" + question_item['question'] + "</p>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"question_radio\">";
 			// 渲染选项
 			for (var j = 0; j < question_item['selections'].length; j++) {
 				var selection = question_item['selections'][j];
@@ -792,7 +790,7 @@
 		if (res['code'] == '0') {
 			// 登陆成功
 			username = res['username'];
-			greeting.innerHTML = "欢迎," + res['username'];
+			greeting.innerHTML = "欢迎," + res['truename'];
 			access = 1;
 			toggle_login(0);
 		}
@@ -1160,8 +1158,8 @@
 			main_ele += "<tr class=\"item_row\" data-key=\"" + res['data'][item][0] + "\"><td><input type=\"checkbox\" data-action=\"\" class=\"admin_checkbox\"></td>";
 			main_ele += "<td>" + (item + 1) + "</td>";
 			if (action == "tests") {
-				for (var n = 0; n < res['data'][item].length; n++) {
-					if (n == 1) {
+				for (var n = 1; n < res['data'][item].length; n++) {
+					if (n == 2) {
 						main_ele += "<td><div>";
 						for (var _i26 = 0; _i26 < res['data'][item][n].length; _i26++) {
 							var selection = res['data'][item][n][_i26];
@@ -1267,6 +1265,9 @@
   */
 	function toggle_upload(toggle) {
 		if (toggle) {
+			if (admin_state == "tests") {
+				alert("上传带有图片的题目的上传方法:\n格式同文本上传, 在需要图片的题目加上:\n[img:这里写图片的名字]\n即可.\n注意:图片和题目必须一起上传! 且需要确保上传的图片名和题目中的标签保持一致.");
+			}
 			admin_uploadbox.style['transform'] = "scale3d(1,1,1)";
 		} else {
 			files = [];
@@ -1367,8 +1368,8 @@
 		data = make_data(data);
 		// 删除用户
 		if (action == "del") {
-			if (target == username) {
-				alert("你不能删除自己!");
+			if (target.includes(username)) {
+				alert("你不能删除自己! 请去除对当前用户的选择.");
 				return;
 			}
 			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
@@ -1433,15 +1434,15 @@
 	function check_files(filelist, state) {
 		type = "";
 		if (state == "videos") {
-			type = "video/mp4";
+			type = ["video/mp4"];
 		} else if (state == "instructions") {
-			type = "application/pdf";
+			type = ["application/pdf"];
 		} else if (state == "tests") {
-			type = "text/plain";
+			type = ["text/plain", "image/png", "image/jpeg", "image/jpg", "image/bmp", "image/gif"];
 		}
 		for (var _i30 = 0; _i30 < filelist.length; _i30++) {
 			var file = filelist[_i30];
-			if (file.type !== type) return file.name;
+			if (!type.includes(file.type)) return file.name;
 			if (file.size >= 209715200) return file.name; // 文件大于200MB, 拒绝
 		}
 		return false;
@@ -1510,6 +1511,7 @@
 			console.log(xhr.status + "<->" + xhr.statusText);
 			// 渲染列表
 			label.innerHTML = "上传失败";
+			_upload();
 		};
 		xhr.upload.onprogress = function (e) {
 			var percent = Math.floor(e.loaded / e.total * 100);
@@ -1523,7 +1525,7 @@
 				try {
 					var res = JSON.parse(xhr.response);
 					if (!access_test(res)) return;
-					render_admin(res['api']);
+					if (res['api']) render_admin(res['api']);
 					_upload();
 				} catch (e) {
 					alert("错误! 后台结果异常(000J)");
@@ -1554,7 +1556,7 @@
   */
 	function toggle_new_question(toggle) {
 		if (toggle) {
-			var holder = "\u76EE\u524D\u4EC5\u652F\u6301\u9009\u62E9\u9898\u578B, \u9700\u6309\u7167\u4E0B\u9762\u683C\u5F0F\u8FDB\u884C\u6DFB\u52A0(\u6279\u91CF\u4E0A\u4F20\u540C\u53C2\u8003\u6B64\u683C\u5F0F):\n\n\u8FD9\u662F\u4E00\u4E2A\u9898\u76EE, \u9898\u76EE\u4E0D\u8981\u6362\u884C, \u9898\u53F7\u4E0D\u7528\u5199\n\u9009\u9879\u53EF\u4EE5\u4E0D\u7528\u5199ABC\u8FD9\u4E9B, \u8FD9\u662F\u7B2C\u4E00\u4E2A\u9009\u9879\n\u8FD9\u662F\u9009\u9879B, \u9519\u8BEF\u7B54\u6848\n* \u8FD9\u662F\u6B63\u786E\u7B54\u6848, \u6B63\u786E\u7B54\u6848\u524D\u9762\u6709\u4E00\u4E2A\u661F\u53F7\n\u8FD9\u662F\u9009\u9879D, \u9519\u8BEF\u7B54\u6848\n\n\u4E0D\u540C\u9898\u76EE\u4E4B\u95F4\u4EC5\u4F7F\u7528\u4E00\u4E2A\u7A7A\u884C\u8FDB\u884C\u5206\u5272.\n* \u8FD9\u662F\u7B2C\u4E00\u4E2A\u9009\u9879\n\u8FD9\u662F\u9009\u9879B, \u672C\u9898\u53EA\u6709\u4E24\u4E2A\u9009\u9879";
+			var holder = "\u76EE\u524D\u4EC5\u652F\u6301\u9009\u62E9\u9898\u578B, \u9700\u6309\u7167\u4E0B\u9762\u683C\u5F0F\u8FDB\u884C\u6DFB\u52A0(\u6279\u91CF\u4E0A\u4F20\u540C\u53C2\u8003\u6B64\u683C\u5F0F), \u6B64\u65B9\u5F0F\u4EC5\u652F\u6301\u7EAF\u6587\u672C\u7684\u9898\u76EE, \u5982\u679C\u9700\u8981\u4E0A\u4F20\u5E26\u6709\u56FE\u7247\u7684\u9898\u76EE, \u8BF7\u4F7F\u7528\u6587\u4EF6\u4E0A\u4F20\u529F\u80FD\n\n\u8FD9\u662F\u4E00\u4E2A\u9898\u76EE, \u9898\u76EE\u4E0D\u8981\u6362\u884C, \u9898\u53F7\u4E0D\u7528\u5199\n\u9009\u9879\u53EF\u4EE5\u4E0D\u7528\u5199ABC\u8FD9\u4E9B, \u8FD9\u662F\u7B2C\u4E00\u4E2A\u9009\u9879\n\u8FD9\u662F\u9009\u9879B, \u9519\u8BEF\u7B54\u6848\n* \u8FD9\u662F\u6B63\u786E\u7B54\u6848, \u6B63\u786E\u7B54\u6848\u524D\u9762\u6709\u4E00\u4E2A\u661F\u53F7\n\u8FD9\u662F\u9009\u9879D, \u9519\u8BEF\u7B54\u6848\n\n\u4E0D\u540C\u9898\u76EE\u4E4B\u95F4\u4EC5\u4F7F\u7528\u4E00\u4E2A\u7A7A\u884C\u8FDB\u884C\u5206\u5272.\n* \u8FD9\u662F\u7B2C\u4E00\u4E2A\u9009\u9879\n\u8FD9\u662F\u9009\u9879B, \u672C\u9898\u53EA\u6709\u4E24\u4E2A\u9009\u9879";
 			question_input.value = "";
 			question_input.setAttribute("placeholder", holder);
 			question_box.style['transform'] = "scale3d(1,1,1)";
@@ -1568,9 +1570,6 @@
   * @return {[type]} [description]
   */
 	function check_struct(raw_data) {
-		// if (filterSqlStr(raw_data)) {
-
-		// }
 		var result = [];
 		var questions = raw_data.split(/\n(\n)*\n/);
 		for (var _i33 = 0; _i33 < questions.length; _i33++) {

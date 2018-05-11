@@ -589,7 +589,7 @@
 			// 渲染题目
 			html += `<div class="question_item" data-id="${question_item['qid']}">
 				<div class="question_title">
-					<p>${question_no}.${question_item['question']}</p>
+					<p style="display: flex;">${question_item['question']}</p>
 				</div>
 				<div class="question_radio">`
 			// 渲染选项
@@ -1194,8 +1194,8 @@
 			main_ele += `<tr class="item_row" data-key="${res['data'][item][0]}"><td><input type="checkbox" data-action="" class="admin_checkbox"></td>`
 			main_ele += `<td>${item+1}</td>`
 			if ( action == "tests" ) {
-				for ( let n = 0; n < res['data'][item].length; n ++ ) {
-					if ( n == 1 ) {
+				for ( let n = 1; n < res['data'][item].length; n ++ ) {
+					if ( n == 2 ) {
 						main_ele += `<td><div>`
 						for ( let i = 0; i < res['data'][item][n].length; i ++ ) {
 							let selection = res['data'][item][n][i]
@@ -1305,6 +1305,9 @@
 	 */
 	function toggle_upload(toggle) {
 		if ( toggle ) {
+			if ( admin_state == "tests" ) {
+				alert("上传带有图片的题目的上传方法:\n格式同文本上传, 在需要图片的题目加上:\n[img:这里写图片的名字]\n即可.\n注意:图片和题目必须一起上传! 且需要确保上传的图片名和题目中的标签保持一致.")
+			}
 			admin_uploadbox.style['transform'] = "scale3d(1,1,1)"
 		}
 		else {
@@ -1480,17 +1483,17 @@
 	function check_files(filelist, state) {
 		type = ""
 		if ( state == "videos" ) {
-			type = "video/mp4"
+			type = ["video/mp4"]
 		}
 		else if ( state == "instructions" ) {
-			type = "application/pdf"
+			type = ["application/pdf"]
 		}
 		else if ( state == "tests" ) {
-			type = "text/plain"
+			type = ["text/plain", "image/png", "image/jpeg", "image/jpg", "image/bmp", "image/gif"]
 		}
 		for ( let i = 0; i < filelist.length; i ++ ) {
 			let file = filelist[i]
-			if ( file.type !== type ) return file.name
+			if ( !type.includes(file.type) ) return file.name
 			if ( file.size >= 209715200 ) return file.name // 文件大于200MB, 拒绝
 		}
 		return false
@@ -1559,6 +1562,7 @@
 			console.log(xhr.status + "<->" + xhr.statusText);
 			// 渲染列表
 			label.innerHTML = "上传失败"
+			_upload()
 		};
 		xhr.upload.onprogress = function (e) {
 			let percent = Math.floor((e.loaded / e.total)*100)
@@ -1572,7 +1576,7 @@
 				try {
 					let res = JSON.parse(xhr.response);
 					if (!access_test(res)) return;
-					render_admin(res['api'])
+					if (res['api']) render_admin(res['api'])
 					_upload()
 				} catch (e) {
 					alert("错误! 后台结果异常(000J)");
@@ -1604,7 +1608,7 @@
 	function toggle_new_question(toggle) {
 		if (toggle) {
 			let holder = 
-`目前仅支持选择题型, 需按照下面格式进行添加(批量上传同参考此格式):
+`目前仅支持选择题型, 需按照下面格式进行添加(批量上传同参考此格式), 此方式仅支持纯文本的题目, 如果需要上传带有图片的题目, 请使用文件上传功能
 
 这是一个题目, 题目不要换行, 题号不用写
 选项可以不用写ABC这些, 这是第一个选项
@@ -1629,9 +1633,6 @@
 	 * @return {[type]} [description]
 	 */
 	function check_struct(raw_data) {
-		// if (filterSqlStr(raw_data)) {
-
-		// }
 		let result = []
 		let questions = raw_data.split(/\n(\n)*\n/)
 		for ( let i = 0; i < questions.length; i++ ) {
