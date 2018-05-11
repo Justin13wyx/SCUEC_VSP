@@ -56,8 +56,9 @@ class DBConnector:
         return True
 
     def remove_attr(self, table, keyword, value, commit=False):
-        condition = "{}='{}'".format(keyword, value)
+        condition = "{}=\"{}\"".format(keyword, value)
         sql = del_sql.format(table, condition)
+        print(sql)
         self.cursor.execute(sql)
         if commit:
             self.conn.commit()
@@ -93,7 +94,7 @@ def trim_comma(field):
     return attr
 
 
-def hash_passwd(secret):
+def hash_string(secret):
     m = md5()
     m.update(secret.encode("utf-8"))
     return m.hexdigest()
