@@ -77,6 +77,7 @@
 	var access = 0;
 	var username = "";
 	var intest = 0;
+	var time_record = 0;
 
 	var admin_state = ""
 	var files = [];
@@ -377,7 +378,7 @@
 		if (selected_pdf) {
 			var pdf_win = window.open("http://127.0.0.1:5000/" + selected_pdf)
 			Object.defineProperty(pdf_win, "timer", {
-				value: 0, // 这个值需要从后台拉取
+				value: time_record, // 这个值需要从后台拉取
 				writable: true
 			})
 			Object.defineProperty(pdf_win, "time_handler", {
@@ -390,7 +391,9 @@
 						if ( pdf_win.timer <= 3600 ) {
 							pdf_win.timer += 1;
 							// 需要post用户观看时间
-							fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionTime", check_ins_update, `username=${username}&time=${pdf_win.timer}`)
+							if (pdf_win.timer % 2 == 0) {
+								fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionTime", check_ins_update, `username=${username}&time=${pdf_win.timer}`)
+							}
 						}
 						else {
 							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.")
@@ -854,6 +857,7 @@ window.fetch_data = fetch_data // 全局绑定
 			greeting.innerHTML = "欢迎," + res['truename']
 			access = 1
 			toggle_login(0)
+			fetch_data(false, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null)
 		}
 		if (res['code'] == '1') {
 			// 密码错误
@@ -1072,6 +1076,7 @@ window.fetch_data = fetch_data // 全局绑定
 	 * @return {[type]}     [description]
 	 */
 	function fill_user_info(res) {
+		time_record = Math.ceil(res.userstate[1] / 60)
 		mask.style['display'] = "block"
 		tooltip.children[0].innerHTML = `你好,${res['truename']}<span id="cancel_tooltip">×</span>`
 		let cancel_tooltip = document.getElementById("cancel_tooltip");
