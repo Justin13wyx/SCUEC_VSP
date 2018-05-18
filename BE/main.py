@@ -2,7 +2,7 @@ import os
 import re
 
 import db_connector
-from flask import Flask, request, jsonify, session, send_file, make_response
+from flask import Flask, request, jsonify, session, send_file, make_response, render_template, url_for
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 
 app = Flask(__name__)
@@ -25,6 +25,16 @@ pass_map = {
 
 main_connector = db_connector.DBConnector("./scuec_vsp")
 test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
+
+
+@app.route("/<string:route>", methods=['GET'])
+def index(route):
+    if not route or route.endswith("html"):
+        return render_template("index.html")
+    elif route.endswith("jpg") or route.endswith("png"):
+        return send_file(path.join("templates", "assets", route))
+    else:
+        return send_file(path.join("templates", route))
 
 
 @app.route(prefix.format("index", "fetchInfo"), methods=['GET'])
