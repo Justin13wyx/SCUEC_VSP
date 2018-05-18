@@ -226,30 +226,39 @@ def after_watching():
     return pack_response(-1, "database error")
 
 
-@app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
+@app.route(prefix.format("user", "updateInstructionTime"), methods=['POST'])
 def after_opening():
     user = request.values.get("username")
-    # if user not in session:
-    #     return pack_response(886, "not in session", action="refresh")
-    read_item = request.form['ins']
-    haveread = main_connector.get_attr("instruction_record", "username", user, ("haveread",)).fetchall()
-    if haveread:
-        haveread = haveread[0][0]
-    else:
-        haveread = ""
-    if read_item in haveread.split(","):
+    time = request.values.get("time")
+    if main_connector.update_attr("user_state", "username", user, {"instructionpass": time}):
         return pack_response(0, "ok")
-    else:
-        if haveread == "":
-            haveread = read_item
-        else:
-            haveread += ",%s" % read_item
-        if main_connector.update_attr("instruction_record", "username", user, {"haveread": haveread}):
-            require = \
-                main_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
-            main_connector.update_attr("user_state", "username", user, {"instructionpass": len(haveread.split(","))})
-            return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
-        return pack_response(-1, "database error")
+    return pack_response(-1, "db_error")
+
+
+# @app.route(prefix.format("user", "updateInstructionIndex"), methods=["POST"])
+# def after_opening():
+#     user = request.values.get("username")
+#     # if user not in session:
+#     #     return pack_response(886, "not in session", action="refresh")
+#     read_item = request.form['ins']
+#     haveread = main_connector.get_attr("instruction_record", "username", user, ("haveread",)).fetchall()
+#     if haveread:
+#         haveread = haveread[0][0]
+#     else:
+#         haveread = ""
+#     if read_item in haveread.split(","):
+#         return pack_response(0, "ok")
+#     else:
+#         if haveread == "":
+#             haveread = read_item
+#         else:
+#             haveread += ",%s" % read_item
+#         if main_connector.update_attr("instruction_record", "username", user, {"haveread": haveread}):
+#             require = \
+#                 main_connector.get_attr("machine_requirement", "id", machine_id, ("instructionrequire",)).fetchall()[0]
+#             main_connector.update_attr("user_state", "username", user, {"instructionpass": len(haveread.split(","))})
+#             return pack_response(0, "ok", finished=len(haveread.split(",")) >= int(require[0]))
+#         return pack_response(-1, "database error")
 
 
 @app.route(prefix.format("video", "getVideoIndex"), methods=["GET"])

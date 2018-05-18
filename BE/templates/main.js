@@ -389,6 +389,8 @@
 					pdf_win.time_handler = pdf_win.setInterval(function () {
 						if ( pdf_win.timer <= 3600 ) {
 							pdf_win.timer += 1;
+							// 需要post用户观看时间
+							fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionTime", check_ins_update, `username=${username}&time=${pdf_win.timer}`)
 						}
 						else {
 							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.")
@@ -396,9 +398,9 @@
 					}, 1000)
 				}
 			})
-			pdf_win.starttimer()
-			data = `username=${username}&ins=${selected_pdf}`;
-			fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
+			setTimeout(pdf_win.starttimer, 1000)
+			// data = `username=${username}&ins=${selected_pdf}`;
+			// fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		}
 		else {
 			alert("你还没有选择阅读材料.");
@@ -425,9 +427,14 @@
 	 * @param  {[type]} res [description]
 	 * @return {[type]}     [description]
 	 */
+	// function check_ins_update(res) {
+	// 	if (res['finished']) {
+	// 		alert("你已经完成说明阅读要求")
+	// 	}
+	// }
 	function check_ins_update(res) {
-		if (res['finished']) {
-			alert("你已经完成说明阅读要求")
+		if (res['code'] !== 0) {
+			pdf_win.alert("当前无法连接到服务器, 阅读时间将不会上传!\n请联系技术支持或者网站管理员.")
 		}
 	}
 
@@ -728,6 +735,8 @@
 			}
 		};
 	}
+
+window.fetch_data = fetch_data // 全局绑定
 
 	/**
 	 * 执行登录或者注册操作, 由当前显示的输入信息决定执行哪一个操作
@@ -1069,9 +1078,12 @@
 		cancel_tooltip.addEventListener("click", e => {
 			toggle_tooltip(0)
 		})
-		for (let i = 0; i < items.length; i ++) {
-			items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
-		}
+		// for (let i = 0; i < items.length; i ++) {
+		// 	items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
+		// }
+		items[0].innerHTML = `已观看${res.userstate[0]}, 需要${res.requirement[0]}个`
+		items[1].innerHTML = `已阅读${Math.ceil(res.userstate[1] / 60)}分钟`
+		items[2].innerHTML = `${res.userstate[2]}分, 需要得到${res.requirement[2]}分`
 		if (res.userstate[3] == "0") {
 			items[2].innerHTML = '还未参加测评'
 		}
