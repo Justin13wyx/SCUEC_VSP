@@ -366,7 +366,28 @@
 	read_trigger.addEventListener("click", e => {
 		if (selected_pdf) {
 			var pdf_win = window.open("http://127.0.0.1:5000/" + selected_pdf)
-			data = `username=${username}&ins=${selected_pdf}`
+			Object.defineProperty(pdf_win, "timer", {
+				value: 0,
+				writable: true
+			})
+			Object.defineProperty(pdf_win, "time_handler", {
+				value: 0,
+				writable: true
+			})
+			Object.defineProperty(pdf_win, "starttimer", {
+				value: function () {
+					pdf_win.time_handler = pdf_win.setInterval(function () {
+						if ( pdf_win.timer <= 2 )
+							pdf_win.timer += 1
+						else {
+							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.")
+							pdf_win.clearInterval(pdf_win.time_handler)
+						}
+					}, 1000)
+				}
+			})
+			pdf_win.starttimer()
+			data = `username=${username}&ins=${selected_pdf}`;
 			fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		}
 		else {
@@ -1019,7 +1040,7 @@
 			mask.addEventListener("click", toggle_tooltip)
 		}
 		else {
-			tooltip.style['transform'] = "translate3d(0, -200%, 0)"
+			tooltip.style['transform'] = "translate3d(0, -300%, 0)"
 			mask.removeEventListener("click", toggle_tooltip)
 			mask.style['display'] = "none"
 		}
