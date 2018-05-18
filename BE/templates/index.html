@@ -3,12 +3,12 @@
 <head>
 	<meta charset="UTF-8">
 	<title>中南民族大学大型仪器开放共享服务平台</title>
-	<link rel="stylesheet" type="text/css" href="style.css">
+	<link rel="stylesheet" type="text/css" href="./style.css">
 </head>
 <body>
 	<header>
 		<div id="title">
-			<img src="assets/top.jpg" id="top_logo">
+			<img src="top.jpg" id="top_logo">
 		</div>
 		<div id="navigator">
 			<p class="nav_btn selected" data-role="index" data-callback="fetch_info">首页</p>
@@ -22,8 +22,14 @@
 		<section class="view current" id="main">
 			<!-- 主页,用户可以继续同按钮的操作 -->
 			<div class="box" id="equipment_area">
-				<img src="assets/毛细管电泳仪.jpg">
+				<img src="毛细管电泳仪.jpg">
 				<p>毛细管电泳仪</p>
+				<div class="box" id="control_center">
+					<div class="op_btn" data-map="1">查看视频</div>
+					<div class="op_btn" data-map="2">阅读说明</div>
+					<div class="op_btn" data-map="3">进行测试</div>
+					<div class="op_btn" data-map="0">查看报告</div>
+				</div>
 			</div>
 			<div id="sub_area">
 				<div class="box" id="desc_area">
@@ -32,11 +38,8 @@
 					<p><span class="tag">性能指标</span>工作环境 温度：5－40℃，湿度＜95%（无冷凝条件），外电压90－240V，50/60Hz 工作电压范围 1－30KV（分离），1－10KV（进样），0.1KV可调整 工作电流范围 3－300uA 电泳分离模式 恒压/梯度电压，恒流/梯度电流，恒功率/梯度功率，可同时加压力/程序控制切换极性 进样模式 压力、真空或电动，或三者组合进样，具自动进样校正系统，且可两端进样，具有进样后的等待功能 进样系统配置 2×96孔板、2×48个2ml、0.5ml或PCR管等 柱温控制范围 制冷剂冷却，15℃－60℃（环境温度25℃），精确误差<0.1℃ </p>
 					<p><span class="tag">主要应用</span>核酸/核苷酸分析 · 蛋白质/多肽/糖蛋白研究 · 糖类/糖蛋白分析 · 药物分离、方法开发、质量控制、药代动力学 · 手性拆分，新药开发、手性杂质控制、手性生物转化以及中间体分析等 · 中药/天然产物研究、质量控制和指纹图谱 · 医学、法医学和临床医学研究 · 其他小分子，阴阳离子、有机酸、PTA、无机酸盐、胺类等</p>
 				</div>
-				<div class="box" id="control_center">
-					<div class="op_btn" data-map="1">查看视频</div>
-					<div class="op_btn" data-map="2">阅读说明</div>
-					<div class="op_btn" data-map="3">进行测试</div>
-					<div class="op_btn" data-map="0">平台管理</div>
+				<div class="box" id="guide_area">
+					<!-- 这里放指示图 -->
 				</div>
 			</div>
 		</section>
@@ -74,6 +77,11 @@
 			</div>
 		</section>
 	</main>
+	<footer>
+		<div>
+			<p>版权所有© 2018 中南民族大学  武汉市洪山区民族大道182号 邮编 430074 <span id="admin_entry">平台管理入口</span></p>
+		</div>
+	</footer>
 	<div id="bg"></div>
 	<div id="mask"></div>
 	<div id="mask_for_mask"></div>
@@ -198,6 +206,6 @@
 			</div>
 		</div>
 	</section>
-	<script src="main.js"></script>
+	<script src="./main.js"></script>
 </body>
 </html>

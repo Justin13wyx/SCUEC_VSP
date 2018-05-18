@@ -35,6 +35,29 @@ header > #navigator {
 	margin-left: 20%;
 }
 
+footer {
+	position: absolute;
+	bottom: 0;
+	width: 50%;
+	left: 25%;
+}
+
+footer > div {
+	padding: 5px 20px;
+	background-color: rgb(232, 222, 220);
+	border-radius: 10px;
+}
+
+#admin_entry {
+	color: #555;
+	cursor: pointer;
+	padding: 5px;
+}
+
+#admin_entry:hover {
+	color: #777;
+}
+
 .nav_btn {
 	margin: 0 20px;
 	padding: 10px 20px 10px 20px;
@@ -163,6 +186,11 @@ header > #navigator {
 	align-self: stretch;
 }
 
+#guide_area {
+	flex: 1;
+	align-self: stretch;
+}
+
 #instruction_area {
 	display: flex;
 	flex-direction: column;
@@ -228,6 +256,10 @@ header > #navigator {
 	align-items: center;
 	justify-content: center;
 	flex-wrap: wrap;
+	border-top: 1px solid rgb(181, 191, 181);
+	border-radius: 0;
+	background-color: transparent;
+	box-shadow: none;
 }
 
 .op_btn {

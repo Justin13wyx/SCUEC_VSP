@@ -8,7 +8,7 @@
 	var curView = document.getElementsByClassName("current")[0];
 	var reminder = document.getElementById("reminder");
 
-	var btn2view = new Map()
+	var btn2view = new Map();
 	btn2view.set("index", main_area)
 	btn2view.set("video", video_area)
 	btn2view.set("instruction", instruction_area)
@@ -19,6 +19,7 @@
 	btn2func.set("fetch_instruction", fetch_instruction)
 	btn2func.set("fetch_questions", check_haveaccess2test) // data-func和目标回调函数引用的关联映射
 
+	var admin_entry = document.getElementById('admin_entry');
 	var admin_area = document.getElementById("admin_area");
 	var close_btn = document.getElementById("icon-close");
 	var aside_nav = document.getElementsByClassName("aside_select");
@@ -122,6 +123,12 @@
 			}
 		})
 	}
+
+	// footer的管理入口
+	admin_entry.addEventListener("click", function (e) {
+		e.preventDefault()
+		active_admin()
+	})
 
 	// 对测评界面的按钮绑定
 	for ( let i = 0; i < test_control.length; i ++ ) {
@@ -241,7 +248,10 @@
 			btn.addEventListener("click", e => {
 				e.preventDefault()
 				e.cancelBubble = true
-				active_admin()
+				if (access)
+					toggle_result(true);
+				else
+					alert("你还没有登录!")
 			})
 		}
 	}
@@ -367,7 +377,7 @@
 		if (selected_pdf) {
 			var pdf_win = window.open("http://127.0.0.1:5000/" + selected_pdf)
 			Object.defineProperty(pdf_win, "timer", {
-				value: 0,
+				value: 0, // 这个值需要从后台拉取
 				writable: true
 			})
 			Object.defineProperty(pdf_win, "time_handler", {
@@ -377,11 +387,11 @@
 			Object.defineProperty(pdf_win, "starttimer", {
 				value: function () {
 					pdf_win.time_handler = pdf_win.setInterval(function () {
-						if ( pdf_win.timer <= 2 )
-							pdf_win.timer += 1
+						if ( pdf_win.timer <= 3600 ) {
+							pdf_win.timer += 1;
+						}
 						else {
 							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.")
-							pdf_win.clearInterval(pdf_win.time_handler)
 						}
 					}, 1000)
 				}
@@ -443,12 +453,12 @@
 		if (!res['access']) {
 			alert("你没有权限访问.")
 			deactive_admin()
-			return;
+		} else {
+			token = res['token']
+			localStorage.setItem("token", token)
+			// 模拟点击用户管理
+			aside_nav[0].click()
 		}
-		token = res['token']
-		localStorage.setItem("token", token)
-		// 模拟点击用户管理
-		aside_nav[0].click()
 	}
 
 	/**
@@ -1833,7 +1843,7 @@
 		result_context.fillText(`说明阅读: ${res['userstate'][1]} / ${res['requirement'][1]}`, result_canvas.width * 0.05, canvas.height * 1.2)
 		result_context.fillText(`测评成绩: ${res['userstate'][2]} / ${res['requirement'][2]}`, result_canvas.width * 0.05, canvas.height * 1.35)
 		result_context.font = "45px Arial"
-		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)
+		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2]-10 ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)
 		result_context.font = "20px Arial"
 		result_context.fillText("* 本测评报告做结果参考, 以后台管理数据为准.", result_canvas.width * 0.05, canvas.height * 2.4)
 		result_context.fillText("* 右键可以保存本测评报告为图片.", result_canvas.width * 0.05, canvas.height * 2.5)
