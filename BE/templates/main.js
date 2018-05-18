@@ -857,7 +857,7 @@ window.fetch_data = fetch_data // 全局绑定
 			greeting.innerHTML = "欢迎," + res['truename']
 			access = 1
 			toggle_login(0)
-			fetch_data(false, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), fill_user_info, null)
+			fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username="+escape(username), record_init, null)
 		}
 		if (res['code'] == '1') {
 			// 密码错误
@@ -1047,6 +1047,10 @@ window.fetch_data = fetch_data // 全局绑定
 		for ( let i = 1; i < login_panel.childElementCount - 1; i++) {
 			login_panel.children[i].value = ""
 		}
+	}
+
+	function record_init(res) {
+		time_record = Math.ceil(res.userstate[1] / 60)
 	}
 
 	/**
