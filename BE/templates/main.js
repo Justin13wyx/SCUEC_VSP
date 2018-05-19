@@ -713,12 +713,14 @@
 		}
 		xhr.send(unescape(data));
 		xhr.ontimeout = function (e) {
-			toggle_loading(0)
+			if (block)
+				toggle_loading(0)
 			alert("错误(000T)! 请求超时,请检查网络连接.");
 			if (error_callback) error_callback(xhr);
 		};
 		xhr.onerror = function (e) {
-			toggle_loading(0)
+			if (block)
+				toggle_loading(0)
 			alert("出现错误(000U)! 技术人员请参考控制台输出.")
 			console.log(xhr.status + "<->" + xhr.statusText);
 			if (error_callback) {
@@ -728,7 +730,8 @@
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4 && xhr.status == 200) {
 				//成功fetch到数据
-				toggle_loading(0)
+				if (block)
+					toggle_loading(0)
 				try {
 					var res = JSON.parse(xhr.response);
 				} catch (e) {

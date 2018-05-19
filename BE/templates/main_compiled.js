@@ -1,3 +1,5 @@
+"use strict";
+
 (function () {
 	var nav_btns = document.getElementsByClassName("nav_btn");
 	var main_area = document.getElementById("main");
@@ -19,6 +21,7 @@
 	btn2func.set("fetch_instruction", fetch_instruction);
 	btn2func.set("fetch_questions", check_haveaccess2test); // data-func和目标回调函数引用的关联映射
 
+	var admin_entry = document.getElementById('admin_entry');
 	var admin_area = document.getElementById("admin_area");
 	var close_btn = document.getElementById("icon-close");
 	var aside_nav = document.getElementsByClassName("aside_select");
@@ -76,6 +79,7 @@
 	var access = 0;
 	var username = "";
 	var intest = 0;
+	var time_record = 0;
 
 	var admin_state = "";
 	var files = [];
@@ -119,6 +123,12 @@
 			}
 		});
 	}
+
+	// footer的管理入口
+	admin_entry.addEventListener("click", function (e) {
+		e.preventDefault();
+		active_admin();
+	});
 
 	// 对测评界面的按钮绑定
 	for (var _i2 = 0; _i2 < test_control.length; _i2++) {
@@ -232,7 +242,7 @@
 			btn.addEventListener("click", function (e) {
 				e.preventDefault();
 				e.cancelBubble = true;
-				active_admin();
+				if (access) toggle_result(true);else alert("你还没有登录!");
 			});
 		}
 	};
@@ -361,8 +371,32 @@
 	read_trigger.addEventListener("click", function (e) {
 		if (selected_pdf) {
 			var pdf_win = window.open("http://127.0.0.1:5000/" + selected_pdf);
-			data = "username=" + username + "&ins=" + selected_pdf;
-			fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data);
+			Object.defineProperty(pdf_win, "timer", {
+				value: time_record, // 这个值需要从后台拉取
+				writable: true
+			});
+			Object.defineProperty(pdf_win, "time_handler", {
+				value: 0,
+				writable: true
+			});
+			Object.defineProperty(pdf_win, "starttimer", {
+				value: function value() {
+					pdf_win.time_handler = pdf_win.setInterval(function () {
+						if (pdf_win.timer <= 3600) {
+							pdf_win.timer += 1;
+							// 需要post用户观看时间
+							if (pdf_win.timer % 2 == 0) {
+								fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionTime", check_ins_update, "username=" + username + "&time=" + pdf_win.timer);
+							}
+						} else {
+							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.");
+						}
+					}, 1000);
+				}
+			});
+			setTimeout(pdf_win.starttimer, 1000);
+			// data = `username=${username}&ins=${selected_pdf}`;
+			// fetch_data(false, "POST", "http://127.0.0.1:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		} else {
 			alert("你还没有选择阅读材料.");
 		}
@@ -388,9 +422,14 @@
   * @param  {[type]} res [description]
   * @return {[type]}     [description]
   */
+	// function check_ins_update(res) {
+	// 	if (res['finished']) {
+	// 		alert("你已经完成说明阅读要求")
+	// 	}
+	// }
 	function check_ins_update(res) {
-		if (res['finished']) {
-			alert("你已经完成说明阅读要求");
+		if (res['code'] !== 0) {
+			pdf_win.alert("当前无法连接到服务器, 阅读时间将不会上传!\n请联系技术支持或者网站管理员.");
 		}
 	}
 
@@ -415,12 +454,12 @@
 		if (!res['access']) {
 			alert("你没有权限访问.");
 			deactive_admin();
-			return;
+		} else {
+			token = res['token'];
+			localStorage.setItem("token", token);
+			// 模拟点击用户管理
+			aside_nav[0].click();
 		}
-		token = res['token'];
-		localStorage.setItem("token", token);
-		// 模拟点击用户管理
-		aside_nav[0].click();
 	}
 
 	/**
@@ -655,12 +694,12 @@
 		}
 		xhr.send(unescape(data));
 		xhr.ontimeout = function (e) {
-			toggle_loading(0);
+			if (block) toggle_loading(0);
 			alert("错误(000T)! 请求超时,请检查网络连接.");
 			if (error_callback) error_callback(xhr);
 		};
 		xhr.onerror = function (e) {
-			toggle_loading(0);
+			if (block) toggle_loading(0);
 			alert("出现错误(000U)! 技术人员请参考控制台输出.");
 			console.log(xhr.status + "<->" + xhr.statusText);
 			if (error_callback) {
@@ -670,7 +709,7 @@
 		xhr.onreadystatechange = function () {
 			if (xhr.readyState == 4 && xhr.status == 200) {
 				//成功fetch到数据
-				toggle_loading(0);
+				if (block) toggle_loading(0);
 				try {
 					var res = JSON.parse(xhr.response);
 				} catch (e) {
@@ -680,6 +719,8 @@
 			}
 		};
 	}
+
+	window.fetch_data = fetch_data; // 全局绑定
 
 	/**
   * 执行登录或者注册操作, 由当前显示的输入信息决定执行哪一个操作
@@ -793,6 +834,7 @@
 			greeting.innerHTML = "欢迎," + res['truename'];
 			access = 1;
 			toggle_login(0);
+			fetch_data(true, "GET", "http://127.0.0.1:5000/apiv1/user/fetchInfo?username=" + escape(username), record_init, null);
 		}
 		if (res['code'] == '1') {
 			// 密码错误
@@ -981,6 +1023,10 @@
 		}
 	}
 
+	function record_init(res) {
+		time_record = Math.ceil(res.userstate[1] / 60);
+	}
+
 	/**
   * toggle用户个人信息的函数
   * @param  {[type]} toggle [description]
@@ -994,7 +1040,7 @@
 			// 所以需要在后面调用
 			mask.addEventListener("click", toggle_tooltip);
 		} else {
-			tooltip.style['transform'] = "translate3d(0, -200%, 0)";
+			tooltip.style['transform'] = "translate3d(0, -300%, 0)";
 			mask.removeEventListener("click", toggle_tooltip);
 			mask.style['display'] = "none";
 		}
@@ -1007,15 +1053,19 @@
   * @return {[type]}     [description]
   */
 	function fill_user_info(res) {
+		time_record = Math.ceil(res.userstate[1] / 60);
 		mask.style['display'] = "block";
 		tooltip.children[0].innerHTML = "\u4F60\u597D," + res['truename'] + "<span id=\"cancel_tooltip\">\xD7</span>";
 		var cancel_tooltip = document.getElementById("cancel_tooltip");
 		cancel_tooltip.addEventListener("click", function (e) {
 			toggle_tooltip(0);
 		});
-		for (var _i23 = 0; _i23 < items.length; _i23++) {
-			items[_i23].innerHTML = res.userstate[_i23] + "/" + res.requirement[_i23];
-		}
+		// for (let i = 0; i < items.length; i ++) {
+		// 	items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
+		// }
+		items[0].innerHTML = "\u5DF2\u89C2\u770B" + res.userstate[0] + ", \u9700\u8981" + res.requirement[0] + "\u4E2A";
+		items[1].innerHTML = "\u5DF2\u9605\u8BFB" + Math.ceil(res.userstate[1] / 60) + "\u5206\u949F";
+		items[2].innerHTML = res.userstate[2] + "\u5206, \u9700\u8981\u5F97\u5230" + res.requirement[2] + "\u5206";
 		if (res.userstate[3] == "0") {
 			items[2].innerHTML = '还未参加测评';
 		}
@@ -1111,8 +1161,8 @@
 		}
 		// 填充位置约束的colgroup
 		rule_ele = "";
-		for (var _i24 = 0; _i24 < rule.length; _i24++) {
-			rule_ele += "<col style=\"width: " + rule[_i24] + "%\">";
+		for (var _i23 = 0; _i23 < rule.length; _i23++) {
+			rule_ele += "<col style=\"width: " + rule[_i23] + "%\">";
 		}
 		desc_area_head.children[0].innerHTML = rule_ele;
 		desc_area_body.children[0].innerHTML = rule_ele;
@@ -1126,8 +1176,8 @@
 		// 填充具体的表格
 		if (action == "users") {
 			main_ele = "";
-			for (var _i25 = 0; _i25 < res['data'].length; _i25++) {
-				var user = res['data'][_i25];
+			for (var _i24 = 0; _i24 < res['data'].length; _i24++) {
+				var user = res['data'][_i24];
 				main_ele += "<tr class=\"item_row\" data-key=\"" + user['info'][1] + "\"><td><input type=\"checkbox\" data-name=\"\" class=\"admin_checkbox\"></td>";
 				// 先填充前面的用户信息
 				for (var m = 0; m < user['info'].length; m++) {
@@ -1161,8 +1211,8 @@
 				for (var n = 1; n < res['data'][item].length; n++) {
 					if (n == 2) {
 						main_ele += "<td><div>";
-						for (var _i26 = 0; _i26 < res['data'][item][n].length; _i26++) {
-							var selection = res['data'][item][n][_i26];
+						for (var _i25 = 0; _i25 < res['data'][item][n].length; _i25++) {
+							var selection = res['data'][item][n][_i25];
 							main_ele += "<p>" + selection + "</p>";
 						}
 						main_ele += "</div></td>";
@@ -1224,8 +1274,8 @@
 
 	function bind_sp() {
 		var btns = document.getElementsByClassName("sp_btn");
-		for (var _i27 = 0; _i27 < btns.length; _i27++) {
-			var _btn6 = btns[_i27];
+		for (var _i26 = 0; _i26 < btns.length; _i26++) {
+			var _btn6 = btns[_i26];
 			_btn6.addEventListener("click", function (e) {
 				e.preventDefault();
 				var t = e.target || e.srcElement;
@@ -1244,14 +1294,14 @@
 		if (boxes.length == 0) return result;
 		if (boxes[0].checked) {
 			eles = document.getElementsByClassName("item_row");
-			for (var _i28 = 0; _i28 < eles.length; _i28++) {
-				var ele = eles[_i28];
+			for (var _i27 = 0; _i27 < eles.length; _i27++) {
+				var ele = eles[_i27];
 				result.push(ele.dataset['key']);
 			}
 		} else {
-			for (var _i29 = 1; _i29 < boxes.length; _i29++) {
-				if (boxes[_i29].checked) {
-					result.push(boxes[_i29].parentElement.parentElement.dataset['key']);
+			for (var _i28 = 1; _i28 < boxes.length; _i28++) {
+				if (boxes[_i28].checked) {
+					result.push(boxes[_i28].parentElement.parentElement.dataset['key']);
 				}
 			}
 		}
@@ -1440,8 +1490,8 @@
 		} else if (state == "tests") {
 			type = ["text/plain", "image/png", "image/jpeg", "image/jpg", "image/bmp", "image/gif"];
 		}
-		for (var _i30 = 0; _i30 < filelist.length; _i30++) {
-			var file = filelist[_i30];
+		for (var _i29 = 0; _i29 < filelist.length; _i29++) {
+			var file = filelist[_i29];
 			if (!type.includes(file.type)) return file.name;
 			if (file.size >= 209715200) return file.name; // 文件大于200MB, 拒绝
 		}
@@ -1455,8 +1505,8 @@
   */
 	function render_previewlist(filelist) {
 		html = "";
-		for (var _i31 = 0; _i31 < filelist.length; _i31++) {
-			var file = filelist[_i31];
+		for (var _i30 = 0; _i30 < filelist.length; _i30++) {
+			var file = filelist[_i30];
 			html += "<div class=\"file_item\"><span class=\"file_name\">" + file.name + "</span><span class=\"upload_state\">\u7B49\u5F85\u4E2D</span></div>";
 		}
 		preview_area.innerHTML = html;
@@ -1477,8 +1527,8 @@
 			btn.removeAttribute("disabled");
 			return;
 		}
-		for (var _i32 = 0; _i32 < labels.length; _i32++) {
-			upload_file(files[_i32], labels[_i32]);
+		for (var _i31 = 0; _i31 < labels.length; _i31++) {
+			upload_file(files[_i31], labels[_i31]);
 		}
 		files = [];
 		btn.removeAttribute("disabled");
@@ -1572,8 +1622,8 @@
 	function check_struct(raw_data) {
 		var result = [];
 		var questions = raw_data.split(/\n(\n)*\n/);
-		for (var _i33 = 0; _i33 < questions.length; _i33++) {
-			var q = questions[_i33];
+		for (var _i32 = 0; _i32 < questions.length; _i32++) {
+			var q = questions[_i32];
 			flag = false;
 			if (q && q !== "\n") {
 				for (var j = 0; j < q.split("\n").length; j++) {
@@ -1631,8 +1681,8 @@
   */
 	function bind_radio() {
 		var radios = document.getElementsByClassName("answer_radio");
-		for (var _i34 = 0; _i34 < radios.length; _i34++) {
-			var radio = radios[_i34];
+		for (var _i33 = 0; _i33 < radios.length; _i33++) {
+			var radio = radios[_i33];
 			radio.addEventListener("click", function (e) {
 				intest = 1;
 				var t = e.target || e.srcElement;
@@ -1656,8 +1706,8 @@
 			intest = 0;
 			var _items = question_section.children;
 			user_pack = [];
-			for (var _i35 = 0; _i35 < _items.length; _i35++) {
-				var item = _items[_i35];
+			for (var _i34 = 0; _i34 < _items.length; _i34++) {
+				var item = _items[_i34];
 				var tmp = [item.dataset['id']];
 				var ans = item.children[1].dataset['selected'];
 				if (ans) {
@@ -1692,8 +1742,8 @@
   * @return {[type]} [description]
   */
 	function bind_test_action() {
-		for (var _i36 = 1; _i36 < question_section.childElementCount; _i36++) {
-			question_section.children[_i36].addEventListener("click", function (e) {
+		for (var _i35 = 1; _i35 < question_section.childElementCount; _i35++) {
+			question_section.children[_i35].addEventListener("click", function (e) {
 				e.preventDefault();
 				var t = e.target || e.srcElement;
 				var action = t.dataset['action'];
@@ -1744,7 +1794,7 @@
 		result_context.fillText("\u8BF4\u660E\u9605\u8BFB: " + res['userstate'][1] + " / " + res['requirement'][1], result_canvas.width * 0.05, canvas.height * 1.2);
 		result_context.fillText("\u6D4B\u8BC4\u6210\u7EE9: " + res['userstate'][2] + " / " + res['requirement'][2], result_canvas.width * 0.05, canvas.height * 1.35);
 		result_context.font = "45px Arial";
-		result_context.fillText("\u6D4B\u8BC4\u7ED3\u679C: " + (res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"), result_canvas.width * 0.05, canvas.height * 1.7);
+		result_context.fillText("\u6D4B\u8BC4\u7ED3\u679C: " + (res['userstate'][2] >= res['requirement'][2] - 10 ? "通过" : "未通过"), result_canvas.width * 0.05, canvas.height * 1.7);
 		result_context.font = "20px Arial";
 		result_context.fillText("* 本测评报告做结果参考, 以后台管理数据为准.", result_canvas.width * 0.05, canvas.height * 2.4);
 		result_context.fillText("* 右键可以保存本测评报告为图片.", result_canvas.width * 0.05, canvas.height * 2.5);
@@ -1779,8 +1829,8 @@
   */
 	function clear_all() {
 		var radios = document.getElementsByClassName("answer_radio");
-		for (var _i37 = 0; _i37 < radios.length; _i37++) {
-			var radio = radios[_i37];
+		for (var _i36 = 0; _i36 < radios.length; _i36++) {
+			var radio = radios[_i36];
 			radio.checked = false;
 		}
 	}
