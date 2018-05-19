@@ -2,14 +2,14 @@ import os
 import re
 
 import db_connector
-from flask import Flask, request, jsonify, session, send_file, make_response, render_template, url_for
+from flask import Flask, request, jsonify, session, send_file, make_response, render_template, redirect
 from itsdangerous import TimedJSONWebSignatureSerializer, BadSignature, SignatureExpired
 
 app = Flask(__name__)
 path = os.path
 
 prefix = "/apiv1/{}/{}"
-allowed_extension = [".mp4", ".pdf", ".txt"]
+# allowed_extension = [".mp4", ".pdf", ".txt"]
 
 machine_id = 1
 BASEPATH = "."
@@ -25,6 +25,11 @@ pass_map = {
 
 main_connector = db_connector.DBConnector("./scuec_vsp")
 test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
+
+
+@app.route("/", methods=['GET'])
+def root():
+    return redirect("/index.html")
 
 
 @app.route("/<string:route>", methods=['GET'])
