@@ -1863,8 +1863,8 @@ window.fetch_data = fetch_data // 全局绑定
 		result_context.fillText(`姓名: ${res['truename']}`, result_canvas.width * 0.05, canvas.height * 0.45)
 		result_context.fillText(`测评仪器: 毛细管电泳仪`, result_canvas.width * 0.05, canvas.height * 0.6)
 		result_context.fillText(`报告时间: ${new Date().toLocaleString()}`, result_canvas.width * 0.05, canvas.height * 0.75)
-		result_context.fillText(`视频观看: ${res['userstate'][0]} / ${res['requirement'][0]}`, result_canvas.width * 0.05, canvas.height * 1.05)
-		result_context.fillText(`说明阅读: ${res['userstate'][1]} / ${res['requirement'][1]}`, result_canvas.width * 0.05, canvas.height * 1.2)
+		result_context.fillText(`视频观看: ${res['userstate'][0]}个`, result_canvas.width * 0.05, canvas.height * 1.05)
+		result_context.fillText(`说明阅读: ${Math.ceil(res['userstate'][1] / 60)}分钟`, result_canvas.width * 0.05, canvas.height * 1.2)
 		result_context.fillText(`测评成绩: ${res['userstate'][2]} / ${res['requirement'][2]}`, result_canvas.width * 0.05, canvas.height * 1.35)
 		result_context.font = "45px Arial"
 		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2]-10 ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)

@@ -1790,8 +1790,8 @@
 		result_context.fillText("\u59D3\u540D: " + res['truename'], result_canvas.width * 0.05, canvas.height * 0.45);
 		result_context.fillText("\u6D4B\u8BC4\u4EEA\u5668: \u6BDB\u7EC6\u7BA1\u7535\u6CF3\u4EEA", result_canvas.width * 0.05, canvas.height * 0.6);
 		result_context.fillText("\u62A5\u544A\u65F6\u95F4: " + new Date().toLocaleString(), result_canvas.width * 0.05, canvas.height * 0.75);
-		result_context.fillText("\u89C6\u9891\u89C2\u770B: " + res['userstate'][0] + " / " + res['requirement'][0], result_canvas.width * 0.05, canvas.height * 1.05);
-		result_context.fillText("\u8BF4\u660E\u9605\u8BFB: " + res['userstate'][1] + " / " + res['requirement'][1], result_canvas.width * 0.05, canvas.height * 1.2);
+		result_context.fillText("\u89C6\u9891\u89C2\u770B: " + res['userstate'][0] + "\u4E2A", result_canvas.width * 0.05, canvas.height * 1.05);
+		result_context.fillText("\u8BF4\u660E\u9605\u8BFB: " + Math.ceil(res['userstate'][1] / 60) + "\u5206\u949F", result_canvas.width * 0.05, canvas.height * 1.2);
 		result_context.fillText("\u6D4B\u8BC4\u6210\u7EE9: " + res['userstate'][2] + " / " + res['requirement'][2], result_canvas.width * 0.05, canvas.height * 1.35);
 		result_context.font = "45px Arial";
 		result_context.fillText("\u6D4B\u8BC4\u7ED3\u679C: " + (res['userstate'][2] >= res['requirement'][2] - 10 ? "通过" : "未通过"), result_canvas.width * 0.05, canvas.height * 1.7);
