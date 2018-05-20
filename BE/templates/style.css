@@ -42,10 +42,19 @@ footer {
 	left: 25%;
 }
 
+#step {
+	border-radius: 10px;
+}
+
 footer > div {
 	padding: 5px 20px;
 	background-color: rgb(232, 222, 220);
 	border-radius: 10px;
+}
+
+footer div > p {
+	width: 100%;
+	text-align: center;
 }
 
 #admin_entry {
@@ -187,6 +196,9 @@ footer > div {
 }
 
 #guide_area {
+	display: flex;
+	justify-content: center;
+	align-items: center;
 	flex: 1;
 	align-self: stretch;
 }
