@@ -29,7 +29,7 @@ test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
 
 @app.route("/", methods=['GET'])
 def root():
-    return redirect("/index.html")
+    return redirect("te/index.html") # 这个地方修改是因为网络中心的转发
 
 
 @app.route("/<string:route>", methods=['GET'])
@@ -548,7 +548,7 @@ def write2db(data):
     else:
         selection_id = selection_id[0] + 1
     for question in questions:
-        question = pattern.sub(r"<img src='http://localhost:5000/images/\g<img_name>'>", question)
+        question = pattern.sub(r"<img src='https://dygw.scuec.edu.cn:5000/images/\g<img_name>'>", question)
         items = question.split("\n")
         title = items[0]
         start_id = selection_id
