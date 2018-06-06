@@ -1867,7 +1867,7 @@ window.fetch_data = fetch_data // 全局绑定
 		result_context.fillText(`说明阅读: ${res['userstate'][1]} / ${res['requirement'][1]}`, result_canvas.width * 0.05, canvas.height * 1.2)
 		result_context.fillText(`测评成绩: ${res['userstate'][2]} / ${res['requirement'][2]}`, result_canvas.width * 0.05, canvas.height * 1.35)
 		result_context.font = "45px Arial"
-		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2]-10 ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)
+		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)
 		result_context.font = "20px Arial"
 		result_context.fillText("* 本测评报告做结果参考, 以后台管理数据为准.", result_canvas.width * 0.05, canvas.height * 2.4)
 		result_context.fillText("* 右键可以保存本测评报告为图片.", result_canvas.width * 0.05, canvas.height * 2.5)

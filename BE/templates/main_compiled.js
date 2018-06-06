@@ -1792,7 +1792,7 @@
 		result_context.fillText("\u8BF4\u660E\u9605\u8BFB: " + res['userstate'][1] + " / " + res['requirement'][1], result_canvas.width * 0.05, canvas.height * 1.2);
 		result_context.fillText("\u6D4B\u8BC4\u6210\u7EE9: " + res['userstate'][2] + " / " + res['requirement'][2], result_canvas.width * 0.05, canvas.height * 1.35);
 		result_context.font = "45px Arial";
-		result_context.fillText("\u6D4B\u8BC4\u7ED3\u679C: " + (res['userstate'][2] >= res['requirement'][2] - 10 ? "通过" : "未通过"), result_canvas.width * 0.05, canvas.height * 1.7);
+		result_context.fillText("\u6D4B\u8BC4\u7ED3\u679C: " + (res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"), result_canvas.width * 0.05, canvas.height * 1.7);
 		result_context.font = "20px Arial";
 		result_context.fillText("* 本测评报告做结果参考, 以后台管理数据为准.", result_canvas.width * 0.05, canvas.height * 2.4);
 		result_context.fillText("* 右键可以保存本测评报告为图片.", result_canvas.width * 0.05, canvas.height * 2.5);
