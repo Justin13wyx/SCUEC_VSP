@@ -117,7 +117,7 @@
 				_data.set("state", admin_state);
 				_data.set("passline", admin_input.children.pass.value);
 				_data = make_data(_data);
-				if (confirm("确定设置成" + admin_input.children.pass.value + "?")) fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/setpass", check_setpass_state, _data);
+				if (confirm("确定设置成" + admin_input.children.pass.value + "?")) fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/setpass", check_setpass_state, _data);
 			}
 		});
 	}
@@ -323,7 +323,7 @@
 		max_viewtime = 0;
 		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○") max_view += 1;
 		// 告诉服务端, 用户看完了
-		fetch_data(false, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/updateVideoIndex", checkfinished, "username=" + username + "&video_pass=" + max_view);
+		fetch_data(false, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/updateVideoIndex", checkfinished, "username=" + username + "&video_pass=" + max_view);
 		// 自动获取下一个的视频
 		if (max_view >= video_list.children[0].children.length - 1) {
 			video.pause();
@@ -368,7 +368,7 @@
 	// 开始阅读的事件绑定
 	read_trigger.addEventListener("click", function (e) {
 		if (selected_pdf) {
-			var pdf_win = window.open("https://dygw.scuec.edu.cn:5000/" + selected_pdf);
+			var pdf_win = window.open("https://dygx.scuec.edu.cn:5000/" + selected_pdf);
 			Object.defineProperty(pdf_win, "timer", {
 				value: time_record, // 这个值需要从后台拉取
 				writable: true
@@ -384,7 +384,7 @@
 							pdf_win.timer += 1;
 							// 需要post用户观看时间
 							if (pdf_win.timer % 2 == 0) {
-								fetch_data(false, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/updateInstructionTime", check_ins_update, "username=" + username + "&time=" + pdf_win.timer);
+								fetch_data(false, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/updateInstructionTime", check_ins_update, "username=" + username + "&time=" + pdf_win.timer);
 							}
 						} else {
 							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.");
@@ -394,7 +394,7 @@
 			});
 			setTimeout(pdf_win.starttimer, 1000);
 			// data = `username=${username}&ins=${selected_pdf}`;
-			// fetch_data(false, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
+			// fetch_data(false, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/updateInstructionIndex", check_ins_update, data)
 		} else {
 			alert("你还没有选择阅读材料.");
 		}
@@ -438,7 +438,7 @@
   */
 	function active_admin() {
 		if (access) {
-			fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/getToken", _active_admin, "username=" + username);
+			fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/getToken", _active_admin, "username=" + username);
 			admin_area.style['transform'] = "scale3d(1, 1, 1)";
 		} else alert("你还没有登录!");
 	}
@@ -476,7 +476,7 @@
   * @return {[type]} [description]
   */
 	function fetch_info() {
-		fetch_data(false, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/index/fetchInfo", fill_reminder);
+		fetch_data(false, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/index/fetchInfo", fill_reminder);
 	}
 
 	function fill_reminder(res) {
@@ -488,7 +488,7 @@
   * @return {[type]} [description]
   */
 	function fetch_video() {
-		fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/video/getVideoIndex", _fetch_video);
+		fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/video/getVideoIndex", _fetch_video);
 	}
 
 	/**
@@ -501,11 +501,11 @@
 		html = "<ul>";
 		for (var _i11 = 0; _i11 < videos.length; _i11++) {
 			var _video = videos[_i11];
-			html += "<li class=\"\" link=https://dygw.scuec.edu.cn:5000/" + _video[1] + "><span class=\"seen_token\">\u25CB</span>" + _video[0] + "</li>";
+			html += "<li class=\"\" link=https://dygx.scuec.edu.cn:5000/" + _video[1] + "><span class=\"seen_token\">\u25CB</span>" + _video[0] + "</li>";
 		}
 		html += "</ul>";
 		video_list.innerHTML = html;
-		fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(username), highlight_videolist);
+		fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(username), highlight_videolist);
 	}
 
 	/**
@@ -564,7 +564,7 @@
   * @return {[type]} [description]
   */
 	function fetch_instruction() {
-		fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction);
+		fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/instruction/getInstructionIndex", _fetch_instruction);
 	}
 
 	/**
@@ -586,7 +586,7 @@
   */
 	function fetch_questions(res) {
 		if (res['access'] == true) {
-			fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/test/getQuestions?mac_id=1", render_questions);
+			fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/test/getQuestions?mac_id=1", render_questions);
 		} else {
 			alert("你还没有完成视频观看或者说明阅读要求!\n通过点击用户头像可以查看当前完成状态.");
 			setTimeout(function (e) {
@@ -767,7 +767,7 @@
 			// 注册信息组装
 			data = make_data(form);
 			// 发送注册请求
-			fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/doSignin", check_register_state, data, toggle_login);
+			fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/doSignin", check_register_state, data, toggle_login);
 		} else {
 			// 填充验证
 			for (var _i20 = 0; _i20 < login.length; _i20++) {
@@ -786,7 +786,7 @@
 			// 登录信息组装
 			data = make_data(form);
 			// 发送登录请求
-			fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/doLogin", check_login_state, data, toggle_login);
+			fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/doLogin", check_login_state, data, toggle_login);
 		}
 	}
 
@@ -832,7 +832,7 @@
 			greeting.innerHTML = "欢迎," + res['truename'];
 			access = 1;
 			toggle_login(0);
-			fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(username), record_init, null);
+			fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(username), record_init, null);
 		}
 		if (res['code'] == '1') {
 			// 密码错误
@@ -879,7 +879,7 @@
 		if (confirm("确定登出?\n你的信息(包括测试)不会被保存!")) {
 			intest = 0;
 			data = "username=" + username;
-			fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/doLogout", check_logout_state, data);
+			fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/doLogout", check_logout_state, data);
 			toggle_tooltip(0);
 			nav_btns[0].click();
 		}
@@ -1032,7 +1032,7 @@
   */
 	function toggle_tooltip(toggle) {
 		if (toggle == "1") {
-			fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(username), fill_user_info, null, toggle_tooltip);
+			fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(username), fill_user_info, null, toggle_tooltip);
 			tooltip.style['transform'] = "translate3d(0, 0, 0)";
 			// 由于这里需要调用toggle_loading 会导致mask消失
 			// 所以需要在后面调用
@@ -1095,7 +1095,7 @@
   * @return {[type]}     [description]
   */
 	function render_admin(api) {
-		fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"));
+		fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1" + api, _render_admin, "token=" + localStorage.getItem("token"));
 	}
 
 	/**
@@ -1370,7 +1370,7 @@
 						_data2.set("state", admin_state);
 						_data2.set("target", target);
 						_data2 = make_data(_data2);
-						fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/del", check_del_state, _data2);
+						fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/del", check_del_state, _data2);
 					} else return;
 				}
 			}
@@ -1399,7 +1399,7 @@
 				_data3.set("token", localStorage.getItem("token"));
 				_data3.set("state", admin_state);
 				_data3 = make_data(_data3);
-				fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/searchUser", re_renderuser, _data3);
+				fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/searchUser", re_renderuser, _data3);
 			}
 			return;
 		}
@@ -1421,35 +1421,35 @@
 				return;
 			}
 			if (confirm("确定删除下面的用户?\n⚠️警告!删除后将不可恢复!\n\n" + target)) {
-				fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/delUser", check_del_state, data);
+				fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/delUser", check_del_state, data);
 			}
 			return;
 		}
 		// 冻结用户
 		if (action == "deactive") {
 			if (confirm("是否冻结下面的用户?\n警告⚠️!同时会收回用户的管理员权限!\n\n" + target)) {
-				fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/deactiveUser", check_admin_state, data);
+				fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/deactiveUser", check_admin_state, data);
 			}
 			return;
 		}
 		// 激活用户
 		if (action == "active") {
 			if (confirm("确定激活下面的用户?\n\n" + target)) {
-				fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/activeUser", check_admin_state, data);
+				fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/activeUser", check_admin_state, data);
 			}
 			return;
 		}
 		// 授权用户成为管理员
 		if (action == "grant") {
 			if (confirm("确定授权下面的用户?\n警告⚠️!管理员权限很大!\n\n" + target)) {
-				fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/grantUser", check_admin_state, data);
+				fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/grantUser", check_admin_state, data);
 			}
 			return;
 		}
 		// 取消用户授权
 		if (action == "ungrant") {
 			if (confirm("确定对下面的用户收回授权?\n\n" + target)) {
-				fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/user/ungrantUser", check_admin_state, data);
+				fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/user/ungrantUser", check_admin_state, data);
 			}
 		}
 	}
@@ -1542,7 +1542,7 @@
 	function upload_file(file, label) {
 		var xhr = new XMLHttpRequest();
 		var reader = new FileReader();
-		xhr.open("POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/upload?state=" + admin_state + "&token=" + localStorage.getItem("token") + "&filename=" + file.name, true);
+		xhr.open("POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/upload?state=" + admin_state + "&token=" + localStorage.getItem("token") + "&filename=" + file.name, true);
 		reader.onerror = function (e) {
 			label.innerHTML = "读取失败";
 		};
@@ -1646,7 +1646,7 @@
 			return;
 		}
 		// 发送data
-		fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/newQuestions", check_confirm_state, "state=" + admin_state + "&data=" + question_input.value);
+		fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/newQuestions", check_confirm_state, "state=" + admin_state + "&data=" + question_input.value);
 	}
 
 	function check_confirm_state(res) {
@@ -1669,7 +1669,7 @@
   * @return {[type]} [description]
   */
 	function check_haveaccess2test() {
-		fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/user/canTest?user=" + username, fetch_questions);
+		fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/user/canTest?user=" + username, fetch_questions);
 	}
 
 	/**
@@ -1717,7 +1717,7 @@
 				}
 				user_pack.push(tmp);
 			}
-			fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/test/uploadAnswers?user=" + username, check_answers, "answers=" + user_pack);
+			fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/test/uploadAnswers?user=" + username, check_answers, "answers=" + user_pack);
 		}
 	}
 
@@ -1759,7 +1759,7 @@
 		var user = _user || username;
 		if (toggle) {
 			result.style['transform'] = "scale3d(1,1,1)";
-			fetch_data(true, "GET", "https://dygw.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(user), render_result);
+			fetch_data(true, "GET", "https://dygx.scuec.edu.cn:5000/apiv1/user/fetchInfo?username=" + escape(user), render_result);
 		} else {
 			result.style['transform'] = "scale3d(0,0,0)";
 			clear_result();
@@ -1811,7 +1811,7 @@
 		var macid = t.parentElement.parentElement.children[1].innerHTML;
 		if (t.innerHTML == "确定") {
 			var new_reminder = reminder_in.children[0].value;
-			fetch_data(true, "POST", "https://dygw.scuec.edu.cn:5000/apiv1/admin/setReminder?machineID=" + macid, check_admin_state, "state=" + admin_state + "&token=" + localStorage.getItem("token") + "&reminder=" + new_reminder);
+			fetch_data(true, "POST", "https://dygx.scuec.edu.cn:5000/apiv1/admin/setReminder?machineID=" + macid, check_admin_state, "state=" + admin_state + "&token=" + localStorage.getItem("token") + "&reminder=" + new_reminder);
 		}
 		if (t.innerHTML == "修改") {
 			var origin_reminder = reminder_in.innerHTML;
