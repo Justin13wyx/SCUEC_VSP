@@ -548,7 +548,7 @@ def write2db(data):
     else:
         selection_id = selection_id[0] + 1
     for question in questions:
-        question = pattern.sub(r"<img src='https://dygx.scuec.edu.cn:5000/images/\g<img_name>'>", question)
+        question = pattern.sub(r"<img src='https://dygx.scuec.edu.cn/te/images/\g<img_name>'>", question)
         items = question.split("\n")
         title = items[0]
         start_id = selection_id
