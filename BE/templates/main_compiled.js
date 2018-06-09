@@ -1022,7 +1022,7 @@
 	}
 
 	function record_init(res) {
-		time_record = Math.ceil(res.userstate[1] / 60);
+		time_record = res.userstate[1];
 	}
 
 	/**
