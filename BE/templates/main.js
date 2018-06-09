@@ -601,14 +601,15 @@
 	 * @return {[type]} [description]
 	 */
 	function fetch_questions(res) {
-		if ( res['access'] == true ) {
-			fetch_data(true, "GET", "https://dygx.scuec.edu.cn/te/apiv1/test/getQuestions?mac_id=1", render_questions)
-		}
-		else {
-			alert("你还没有完成视频观看或者说明阅读要求!\n通过点击用户头像可以查看当前完成状态.")
-			setTimeout(e => {nav_btns[0].click()}, 500)
-			return;
-		}
+		// 新的需求更改 测试不需要观看视频和文档
+		// if ( res['access'] == true ) {
+		fetch_data(true, "GET", "https://dygx.scuec.edu.cn/te/apiv1/test/getQuestions?mac_id=1", render_questions)
+		// }
+		// else {
+		// 	alert("你还没有完成视频观看或者说明阅读要求!\n通过点击用户头像可以查看当前完成状态.")
+		// 	setTimeout(e => {nav_btns[0].click()}, 500)
+		// 	return;
+		// }
 	}
 
 	/**
