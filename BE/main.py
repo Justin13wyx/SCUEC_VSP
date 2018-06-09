@@ -235,7 +235,8 @@ def after_watching():
 def after_opening():
     user = request.values.get("username")
     time = request.values.get("time")
-    if main_connector.update_attr("user_state", "username", user, {"instructionpass": time}):
+    base_time = main_connector.get_attr("user_state", "username", user, "instructionpass").fetch_one()[0]
+    if main_connector.update_attr("user_state", "username", user, {"instructionpass": base_time + time}):
         return pack_response(0, "ok")
     return pack_response(-1, "db_error")
 
