@@ -29,7 +29,8 @@ test_connector = db_connector.DBConnector("./tests/%s/questions" % machine_id)
 
 @app.route("/", methods=['GET'])
 def root():
-    return redirect("te/index.html") # 这个地方修改是因为网络中心的转发
+    # return redirect("index.html")
+    return redirect("te/index.html")  # 这个地方修改是因为网络中心的转发
 
 
 @app.route("/<string:route>", methods=['GET'])
@@ -213,7 +214,7 @@ def push_info():
     #     return pack_response(886, "not in session", action="refresh")
     truename = main_connector.get_attr("user_info", "username", username, ("truename",)).fetchone()
     result_set = main_connector.get_attr("user_state", "username", username,
-                                       ("videopass", "instructionpass", "score", "havetest",)).fetchall()
+                                       ("videopass", "instructionpass", "score", "havetest", "videowatched",)).fetchall()
     requirement = main_connector.get_attr("machine_requirement", "id", machine_id,
                                         ("videorequire", "instructionrequire", "scorerequire")).fetchall()
     return pack_response(0, "ok", truename=truename[0], userstate=result_set[0], requirement=requirement[0])
@@ -225,7 +226,12 @@ def after_watching():
     # if user not in session:
     #     return pack_response(886, "not in session", action="refresh")
     passed = int(request.form['video_pass'])
-    if main_connector.update_attr("user_state", "username", user, {"videopass": passed}):
+    watched_video = request.form['video_name']
+    print(watched_video)
+    have_watched = main_connector.get_attr("user_state", "username", user, ("videowatched",)).fetchone()[0]
+    if have_watched != 0 and watched_video not in have_watched.split(","):
+        have_watched = ",".join([have_watched, watched_video])
+    if main_connector.update_attr("user_state", "username", user, {"videopass": passed, "videowatched": have_watched}):
         video_require = main_connector.get_attr("machine_requirement", "id", machine_id, ("videorequire",)).fetchall()[0]
         return pack_response(0, "ok", finished=passed >= video_require[0])
     return pack_response(-1, "database error")
