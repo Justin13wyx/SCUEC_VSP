@@ -1,3 +1,5 @@
+"use strict";
+
 (function () {
 	var nav_btns = document.getElementsByClassName("nav_btn");
 	var main_area = document.getElementById("main");
@@ -309,6 +311,8 @@
 				}
 				video.children[0].setAttribute("src", e.target.getAttribute("link"));
 				video.load();
+				video_control.children[1].innerHTML = "播放";
+				// video.play()
 				for (var _i9 = 0; _i9 < video_list.children[0].children.length; _i9++) {
 					var node = video_list.children[0].children[_i9];
 					node.removeAttribute("class");
@@ -321,18 +325,20 @@
 	// 播放完成之后的回调
 	video.onended = function () {
 		max_viewtime = 0;
-		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○") max_view += 1;
+		var current_watching = document.getElementsByClassName("playing")[0];
+		if (current_watching.children[0].innerHTML == "○") max_view += 1;
 		// 告诉服务端, 用户看完了
-		fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateVideoIndex", checkfinished, "username=" + username + "&video_pass=" + max_view);
+		var video_name = current_watching.childNodes[1].nodeValue;
+		fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateVideoIndex", checkfinished, "username=" + username + "&video_pass=" + max_view + "&video_name=" + video_name);
 		// 自动获取下一个的视频
 		if (max_view >= video_list.children[0].children.length - 1) {
 			video.pause();
 			return;
 		}
-		video_list.children[0].children[max_view - 1].children[0].innerHTML = "√";
-		video_list.children[0].children[max_view].click();
-		video.play();
-		video_control.children[1].innerHTML = "暂停";
+		current_watching.children[0].innerHTML = "√";
+		video_control.children[1].innerHTML = "播放";
+		document.getElementsByClassName("playing")[0].removeAttribute("class");
+		video.children[0].removeAttribute("src");
 	};
 
 	// 前进, 暂停播放, 后移的事件绑定
@@ -342,9 +348,11 @@
 		if (target.dataset['role'] == "-10") {
 			video.currentTime -= 10;
 		} else if (target.dataset['role'] == "+10") {
-			if (video.currentTime + 1 < max_viewtime) {
-				video.currentTime += 10;
-			} else video.currentTime = max_viewtime;
+			// if (video.currentTime + 1 < max_viewtime) {
+			// 	video.currentTime += 10
+			// }
+			// else video.currentTime = max_viewtime
+			video.currentTime += 10;
 		} else if (target.dataset['role'] == "play") {
 			toggle_play();
 		}
@@ -407,7 +415,6 @@
 		if (illegal_file) {
 			alert(illegal_file + "类型不合法或者大于200MB, 请重新选择");
 			files = null;
-			return;
 		} else {
 			// 文件类型检查通过
 			render_previewlist(this.files);
@@ -513,16 +520,27 @@
   * @param  {[type]} res [description]
   * @return {[type]}     [description]
   */
+	// function highlight_videolist(res) {
+	// 	haveseen = res.userstate[0]
+	// 	max_view = haveseen
+	// 	tokens = document.getElementsByClassName("seen_token")
+	// 	if ( tokens.length == 0 ) return;
+	// 	for (let i = 0; i < haveseen; i ++) {
+	// 		tokens[i].innerHTML = "√"
+	// 	}
+	// 	tokens[haveseen].parentElement.setAttribute("class", "playing")
+	// 	tokens[haveseen].parentElement.click()
+	// }
 	function highlight_videolist(res) {
 		haveseen = res.userstate[0];
 		max_view = haveseen;
+		seen_list = res.userstate[4].split(",");
 		tokens = document.getElementsByClassName("seen_token");
-		if (tokens.length == 0) return;
-		for (var _i12 = 0; _i12 < haveseen; _i12++) {
-			tokens[_i12].innerHTML = "√";
+		for (var _i12 = 0; _i12 < video_list.children[0].children.length; _i12++) {
+			if (seen_list.includes(video_list.children[0].children[_i12].childNodes[1].nodeValue)) {
+				tokens[_i12].innerHTML = "√";
+			}
 		}
-		tokens[haveseen].parentElement.setAttribute("class", "playing");
-		tokens[haveseen].parentElement.click();
 	}
 
 	/**
@@ -530,17 +548,19 @@
   * @param  {[type]} res [description]
   * @return {[type]}     [description]
   */
-	function checkfinished(res) {
-		if (res['code'] == '0') {
-			for (var _i13 = 0; _i13 < max_view; _i13++) {
-				tokens[_i13].innerHTML = "√";
-			}
-			if (res['finished']) alert("你已经完成视频观看要求!");
-		} else {
-			max_view--;
-			alert("远端数据库更新失败!");
-		}
-	}
+	function checkfinished(res) {}
+	// if (res['code'] == '0') {
+	// 	for (let i = 0; i < max_view; i ++) {
+	// 		tokens[i].innerHTML = "√"
+	// 	}
+	// 	if ( res['finished'] )
+	// 		alert("你已经完成视频观看要求!")
+	// }
+	// else {
+	// 	max_view --;
+	// 	alert("远端数据库更新失败!")
+	// }
+
 
 	/**
   * 确保用户只可以按照顺序进行观看, 这个处理逻辑是和统计功能挂钩的
@@ -548,15 +568,17 @@
   * @return {[type]}        [description]
   */
 	function checkplaying(target) {
-		iter_nodes = video_list.children[0].children;
-		for (var _i14 = 0; _i14 < iter_nodes.length; _i14++) {
-			if (target == iter_nodes[_i14]) {
-				if (_i14 == 0) return true;
-				if (iter_nodes[_i14 - 1].children[0].innerHTML == "√") {
-					return true;
-				} else return false;
-			}
-		}
+		return true;
+		// iter_nodes = video_list.children[0].children;
+		// for ( let i = 0; i < iter_nodes.length; i++ ) {
+		// 	if ( target == iter_nodes[i] ) {
+		// 		if ( i == 0 ) return true
+		// 		if ( iter_nodes[i-1].children[0].innerHTML == "√" ) {
+		// 			return true
+		// 		}
+		// 		else return false
+		// 	}
+		// }
 	}
 
 	/**
@@ -574,8 +596,8 @@
   */
 	function _fetch_instruction(res) {
 		html = "";
-		for (var _i15 = 0; _i15 < res['data'].length; _i15++) {
-			html += "<div class=\"pdf\" link=\"" + res['data'][_i15][1] + "\">\n\t\t\t\t\t\t<p>" + res['data'][_i15][0].split(".")[0] + "</p>\n\t\t\t\t\t</div>";
+		for (var _i13 = 0; _i13 < res['data'].length; _i13++) {
+			html += "<div class=\"pdf\" link=\"" + res['data'][_i13][1] + "\">\n\t\t\t\t\t\t<p>" + res['data'][_i13][0].split(".")[0] + "</p>\n\t\t\t\t\t</div>";
 		}
 		pdfs.innerHTML = html;
 	}
@@ -609,8 +631,8 @@
 		var raw_data = res['data'];
 		var html = "";
 		var question_no = 1;
-		for (var _i16 = 0; _i16 < raw_data.length; _i16++) {
-			var question_item = raw_data[_i16];
+		for (var _i14 = 0; _i14 < raw_data.length; _i14++) {
+			var question_item = raw_data[_i14];
 			var selection_no = 1;
 			// 渲染题目
 			html += "<div class=\"question_item\" data-id=\"" + question_item['qid'] + "\">\n\t\t\t\t<div class=\"question_title\">\n\t\t\t\t\t<p style=\"display: flex;\">" + question_item['question'] + "</p>\n\t\t\t\t</div>\n\t\t\t\t<div class=\"question_radio\">";
@@ -653,8 +675,8 @@
 	function panel_switch(role) {
 		clear_login();
 		submit_login.setAttribute("data-action", role);
-		for (var _i17 = 0; _i17 < login_part.length; _i17++) {
-			var part = login_part[_i17];
+		for (var _i15 = 0; _i15 < login_part.length; _i15++) {
+			var part = login_part[_i15];
 			part.style["display"] = role == "login" ? "none" : "block";
 		}
 	}
@@ -665,8 +687,8 @@
   * @return {[type]}              [description]
   */
 	function btn_switch(selected_btn) {
-		for (var _i18 = 0; _i18 < nav_btns.length; _i18++) {
-			var _btn2 = nav_btns[_i18];
+		for (var _i16 = 0; _i16 < nav_btns.length; _i16++) {
+			var _btn2 = nav_btns[_i16];
 			_btn2.setAttribute("class", "nav_btn");
 		}
 		selected_btn.setAttribute("class", "nav_btn selected");
@@ -732,23 +754,23 @@
 		var form = new Map();
 		if (role == 'register') {
 			// 填充验证
-			for (var _i19 = 1; _i19 < login_panel.childElementCount - 1; _i19++) {
+			for (var _i17 = 1; _i17 < login_panel.childElementCount - 1; _i17++) {
 				// 长度验证
-				if (_i19 == 1 || _i19 == 4) {
-					if (login_panel.children[_i19].value.length < 5) {
-						alert(login_panel.children[_i19].placeholder + "长度要大于5");
+				if (_i17 == 1 || _i17 == 4) {
+					if (login_panel.children[_i17].value.length < 5) {
+						alert(login_panel.children[_i17].placeholder + "长度要大于5");
 						return;
 					}
 				}
-				if (login_panel.children[_i19].value === "") {
-					alert(login_panel.children[_i19].placeholder + "不能为空");
+				if (login_panel.children[_i17].value === "") {
+					alert(login_panel.children[_i17].placeholder + "不能为空");
 					return;
 				}
 				// 敏感字符过滤
-				if (validate(login_panel.children[_i19].value) && filterSqlStr(login_panel.children[_i19].value)) {
-					form.set(login_panel.children[_i19].name, login_panel.children[_i19].value);
+				if (validate(login_panel.children[_i17].value) && filterSqlStr(login_panel.children[_i17].value)) {
+					form.set(login_panel.children[_i17].name, login_panel.children[_i17].value);
 				} else {
-					login_panel.children[_i19].value = "";
+					login_panel.children[_i17].value = "";
 					return;
 				}
 			}
@@ -770,8 +792,8 @@
 			fetch_data(true, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/doSignin", check_register_state, data, toggle_login);
 		} else {
 			// 填充验证
-			for (var _i20 = 0; _i20 < login.length; _i20++) {
-				var ele = login[_i20];
+			for (var _i18 = 0; _i18 < login.length; _i18++) {
+				var ele = login[_i18];
 				if (ele.value == "") {
 					alert(ele.placeholder + "不能为空");
 					return;
@@ -990,8 +1012,8 @@
   */
 	function toggle_login(toggle, register_only) {
 		mask.style['display'] = toggle == "1" ? "block" : "none";
-		for (var _i21 = 0; _i21 < action_switch.children.length; _i21++) {
-			var switcher = action_switch.children[_i21];
+		for (var _i19 = 0; _i19 < action_switch.children.length; _i19++) {
+			var switcher = action_switch.children[_i19];
 			switcher.style.display = "block";
 		}
 		if (toggle == "1") {
@@ -1016,8 +1038,8 @@
   * @return {[type]} [description]
   */
 	function clear_login() {
-		for (var _i22 = 1; _i22 < login_panel.childElementCount - 1; _i22++) {
-			login_panel.children[_i22].value = "";
+		for (var _i20 = 1; _i20 < login_panel.childElementCount - 1; _i20++) {
+			login_panel.children[_i20].value = "";
 		}
 	}
 
@@ -1159,8 +1181,8 @@
 		}
 		// 填充位置约束的colgroup
 		rule_ele = "";
-		for (var _i23 = 0; _i23 < rule.length; _i23++) {
-			rule_ele += "<col style=\"width: " + rule[_i23] + "%\">";
+		for (var _i21 = 0; _i21 < rule.length; _i21++) {
+			rule_ele += "<col style=\"width: " + rule[_i21] + "%\">";
 		}
 		desc_area_head.children[0].innerHTML = rule_ele;
 		desc_area_body.children[0].innerHTML = rule_ele;
@@ -1174,8 +1196,8 @@
 		// 填充具体的表格
 		if (action == "users") {
 			main_ele = "";
-			for (var _i24 = 0; _i24 < res['data'].length; _i24++) {
-				var user = res['data'][_i24];
+			for (var _i22 = 0; _i22 < res['data'].length; _i22++) {
+				var user = res['data'][_i22];
 				main_ele += "<tr class=\"item_row\" data-key=\"" + user['info'][1] + "\"><td><input type=\"checkbox\" data-name=\"\" class=\"admin_checkbox\"></td>";
 				// 先填充前面的用户信息
 				for (var m = 0; m < user['info'].length; m++) {
@@ -1186,7 +1208,7 @@
 					main_ele += "<td>" + value + "</td>";
 				}
 				// 再填充后面的用户状态
-				main_ele += "<td><div><p>\u89C6\u9891\u89C2\u770B: " + user['state'][0] + "/" + res['require'][0] + "</p><p>\u8BF4\u660E\u9605\u8BFB: " + user['state'][1] + "/" + res['require'][1] + "</p>";
+				main_ele += "<td><div><p>\u89C6\u9891\u89C2\u770B: " + user['state'][0] + "/" + res['require'][0] + "</p><p>\u8BF4\u660E\u9605\u8BFB: " + Math.ceil(user['state'][1] / 60) + "/" + res['require'][1] + "\u5206\u949F</p>";
 				if (user['state'][3] == 0) main_ele += "<p>尚未参加测评</p></div>";else main_ele += "<p>\u6D4B\u8BC4\u6210\u7EE9: " + user['state'][2] + "/" + res['require'][2] + "<p></div>";
 				main_ele += "<button class=\"op_btn sp_btn\" data-role=\"" + user['info'][1] + "\">\u6D4B\u8BC4\u62A5\u544A</button>";
 				main_ele += "</tr>";
@@ -1209,8 +1231,8 @@
 				for (var n = 1; n < res['data'][item].length; n++) {
 					if (n == 2) {
 						main_ele += "<td><div>";
-						for (var _i25 = 0; _i25 < res['data'][item][n].length; _i25++) {
-							var selection = res['data'][item][n][_i25];
+						for (var _i23 = 0; _i23 < res['data'][item][n].length; _i23++) {
+							var selection = res['data'][item][n][_i23];
 							main_ele += "<p>" + selection + "</p>";
 						}
 						main_ele += "</div></td>";
@@ -1272,8 +1294,8 @@
 
 	function bind_sp() {
 		var btns = document.getElementsByClassName("sp_btn");
-		for (var _i26 = 0; _i26 < btns.length; _i26++) {
-			var _btn6 = btns[_i26];
+		for (var _i24 = 0; _i24 < btns.length; _i24++) {
+			var _btn6 = btns[_i24];
 			_btn6.addEventListener("click", function (e) {
 				e.preventDefault();
 				var t = e.target || e.srcElement;
@@ -1292,14 +1314,14 @@
 		if (boxes.length == 0) return result;
 		if (boxes[0].checked) {
 			eles = document.getElementsByClassName("item_row");
-			for (var _i27 = 0; _i27 < eles.length; _i27++) {
-				var ele = eles[_i27];
+			for (var _i25 = 0; _i25 < eles.length; _i25++) {
+				var ele = eles[_i25];
 				result.push(ele.dataset['key']);
 			}
 		} else {
-			for (var _i28 = 1; _i28 < boxes.length; _i28++) {
-				if (boxes[_i28].checked) {
-					result.push(boxes[_i28].parentElement.parentElement.dataset['key']);
+			for (var _i26 = 1; _i26 < boxes.length; _i26++) {
+				if (boxes[_i26].checked) {
+					result.push(boxes[_i26].parentElement.parentElement.dataset['key']);
 				}
 			}
 		}
@@ -1488,8 +1510,8 @@
 		} else if (state == "tests") {
 			type = ["text/plain", "image/png", "image/jpeg", "image/jpg", "image/bmp", "image/gif"];
 		}
-		for (var _i29 = 0; _i29 < filelist.length; _i29++) {
-			var file = filelist[_i29];
+		for (var _i27 = 0; _i27 < filelist.length; _i27++) {
+			var file = filelist[_i27];
 			if (!type.includes(file.type)) return file.name;
 			if (file.size >= 209715200) return file.name; // 文件大于200MB, 拒绝
 		}
@@ -1503,8 +1525,8 @@
   */
 	function render_previewlist(filelist) {
 		html = "";
-		for (var _i30 = 0; _i30 < filelist.length; _i30++) {
-			var file = filelist[_i30];
+		for (var _i28 = 0; _i28 < filelist.length; _i28++) {
+			var file = filelist[_i28];
 			html += "<div class=\"file_item\"><span class=\"file_name\">" + file.name + "</span><span class=\"upload_state\">\u7B49\u5F85\u4E2D</span></div>";
 		}
 		preview_area.innerHTML = html;
@@ -1525,8 +1547,8 @@
 			btn.removeAttribute("disabled");
 			return;
 		}
-		for (var _i31 = 0; _i31 < labels.length; _i31++) {
-			upload_file(files[_i31], labels[_i31]);
+		for (var _i29 = 0; _i29 < labels.length; _i29++) {
+			upload_file(files[_i29], labels[_i29]);
 		}
 		files = [];
 		btn.removeAttribute("disabled");
@@ -1620,8 +1642,8 @@
 	function check_struct(raw_data) {
 		var result = [];
 		var questions = raw_data.split(/\n(\n)*\n/);
-		for (var _i32 = 0; _i32 < questions.length; _i32++) {
-			var q = questions[_i32];
+		for (var _i30 = 0; _i30 < questions.length; _i30++) {
+			var q = questions[_i30];
 			flag = false;
 			if (q && q !== "\n") {
 				for (var j = 0; j < q.split("\n").length; j++) {
@@ -1679,8 +1701,8 @@
   */
 	function bind_radio() {
 		var radios = document.getElementsByClassName("answer_radio");
-		for (var _i33 = 0; _i33 < radios.length; _i33++) {
-			var radio = radios[_i33];
+		for (var _i31 = 0; _i31 < radios.length; _i31++) {
+			var radio = radios[_i31];
 			radio.addEventListener("click", function (e) {
 				intest = 1;
 				var t = e.target || e.srcElement;
@@ -1704,8 +1726,8 @@
 			intest = 0;
 			var _items = question_section.children;
 			user_pack = [];
-			for (var _i34 = 0; _i34 < _items.length; _i34++) {
-				var item = _items[_i34];
+			for (var _i32 = 0; _i32 < _items.length; _i32++) {
+				var item = _items[_i32];
 				var tmp = [item.dataset['id']];
 				var ans = item.children[1].dataset['selected'];
 				if (ans) {
@@ -1740,8 +1762,8 @@
   * @return {[type]} [description]
   */
 	function bind_test_action() {
-		for (var _i35 = 1; _i35 < question_section.childElementCount; _i35++) {
-			question_section.children[_i35].addEventListener("click", function (e) {
+		for (var _i33 = 1; _i33 < question_section.childElementCount; _i33++) {
+			question_section.children[_i33].addEventListener("click", function (e) {
 				e.preventDefault();
 				var t = e.target || e.srcElement;
 				var action = t.dataset['action'];
@@ -1789,7 +1811,7 @@
 		result_context.fillText("\u6D4B\u8BC4\u4EEA\u5668: \u6BDB\u7EC6\u7BA1\u7535\u6CF3\u4EEA", result_canvas.width * 0.05, canvas.height * 0.6);
 		result_context.fillText("\u62A5\u544A\u65F6\u95F4: " + new Date().toLocaleString(), result_canvas.width * 0.05, canvas.height * 0.75);
 		result_context.fillText("\u89C6\u9891\u89C2\u770B: " + res['userstate'][0] + " / " + res['requirement'][0], result_canvas.width * 0.05, canvas.height * 1.05);
-		result_context.fillText("\u8BF4\u660E\u9605\u8BFB: " + res['userstate'][1] + " / " + res['requirement'][1], result_canvas.width * 0.05, canvas.height * 1.2);
+		result_context.fillText("\u8BF4\u660E\u9605\u8BFB: " + Math.ceil(res['userstate'][1] / 60) + " / " + res['requirement'][1], result_canvas.width * 0.05, canvas.height * 1.2);
 		result_context.fillText("\u6D4B\u8BC4\u6210\u7EE9: " + res['userstate'][2] + " / " + res['requirement'][2], result_canvas.width * 0.05, canvas.height * 1.35);
 		result_context.font = "45px Arial";
 		result_context.fillText("\u6D4B\u8BC4\u7ED3\u679C: " + (res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"), result_canvas.width * 0.05, canvas.height * 1.7);
@@ -1827,8 +1849,8 @@
   */
 	function clear_all() {
 		var radios = document.getElementsByClassName("answer_radio");
-		for (var _i36 = 0; _i36 < radios.length; _i36++) {
-			var radio = radios[_i36];
+		for (var _i34 = 0; _i34 < radios.length; _i34++) {
+			var radio = radios[_i34];
 			radio.checked = false;
 		}
 	}

@@ -310,6 +310,8 @@
 				}
 				video.children[0].setAttribute("src", e.target.getAttribute("link"))
 				video.load()
+				video_control.children[1].innerHTML = "播放"
+				// video.play()
 				for ( let i = 0; i < video_list.children[0].children.length; i ++) {
 					let node = video_list.children[0].children[i]
 					node.removeAttribute("class")
@@ -324,19 +326,21 @@
 	// 播放完成之后的回调
 	video.onended = function () {
 		max_viewtime = 0
-		if (document.getElementsByClassName("playing")[0].children[0].innerHTML == "○")
+		let current_watching = document.getElementsByClassName("playing")[0]
+		if (current_watching.children[0].innerHTML == "○")
 			max_view += 1
 		// 告诉服务端, 用户看完了
-		fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}`)
+		let video_name = current_watching.childNodes[1].nodeValue
+		fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateVideoIndex", checkfinished, `username=${username}&video_pass=${max_view}&video_name=${video_name}`)
 		// 自动获取下一个的视频
 		if ( max_view >= video_list.children[0].children.length-1 ) {
 			video.pause()
 			return;
 		}
-		video_list.children[0].children[max_view-1].children[0].innerHTML = "√"
-		video_list.children[0].children[max_view].click()
-		video.play()
-		video_control.children[1].innerHTML = "暂停"
+		current_watching.children[0].innerHTML = "√"
+		video_control.children[1].innerHTML = "播放"
+		document.getElementsByClassName("playing")[0].removeAttribute("class")
+		video.children[0].removeAttribute("src")
 	}
 
 	// 前进, 暂停播放, 后移的事件绑定
@@ -347,10 +351,11 @@
 			video.currentTime -= 10;
 		}
 		else if (target.dataset['role'] == "+10") {
-			if (video.currentTime + 1 < max_viewtime) {
-				video.currentTime += 10
-			}
-			else video.currentTime = max_viewtime
+			// if (video.currentTime + 1 < max_viewtime) {
+			// 	video.currentTime += 10
+			// }
+			// else video.currentTime = max_viewtime
+			video.currentTime += 10
 		}
 		else if (target.dataset['role'] == "play") {
 			toggle_play()
@@ -417,7 +422,6 @@
 		if (illegal_file) {
 			alert(illegal_file + "类型不合法或者大于200MB, 请重新选择")
 			files = null;
-			return;
 		}
 		else { // 文件类型检查通过
 			render_previewlist(this.files)
@@ -524,16 +528,27 @@
 	 * @param  {[type]} res [description]
 	 * @return {[type]}     [description]
 	 */
+	// function highlight_videolist(res) {
+	// 	haveseen = res.userstate[0]
+	// 	max_view = haveseen
+	// 	tokens = document.getElementsByClassName("seen_token")
+	// 	if ( tokens.length == 0 ) return;
+	// 	for (let i = 0; i < haveseen; i ++) {
+	// 		tokens[i].innerHTML = "√"
+	// 	}
+	// 	tokens[haveseen].parentElement.setAttribute("class", "playing")
+	// 	tokens[haveseen].parentElement.click()
+	// }
 	function highlight_videolist(res) {
 		haveseen = res.userstate[0]
 		max_view = haveseen
+		seen_list = res.userstate[4].split(",")
 		tokens = document.getElementsByClassName("seen_token")
-		if ( tokens.length == 0 ) return;
-		for (let i = 0; i < haveseen; i ++) {
-			tokens[i].innerHTML = "√"
+		for ( let i = 0; i < video_list.children[0].children.length; i++ ) {
+			if (seen_list.includes(video_list.children[0].children[i].childNodes[1].nodeValue)) {
+				tokens[i].innerHTML = "√"
+			}
 		}
-		tokens[haveseen].parentElement.setAttribute("class", "playing")
-		tokens[haveseen].parentElement.click()
 	}
 
 	/**
@@ -542,17 +557,17 @@
 	 * @return {[type]}     [description]
 	 */
 	function checkfinished(res) {
-		if (res['code'] == '0') {
-			for (let i = 0; i < max_view; i ++) {
-				tokens[i].innerHTML = "√"
-			}
-			if ( res['finished'] )
-				alert("你已经完成视频观看要求!")
-		}
-		else {
-			max_view --;
-			alert("远端数据库更新失败!")
-		}
+		// if (res['code'] == '0') {
+		// 	for (let i = 0; i < max_view; i ++) {
+		// 		tokens[i].innerHTML = "√"
+		// 	}
+		// 	if ( res['finished'] )
+		// 		alert("你已经完成视频观看要求!")
+		// }
+		// else {
+		// 	max_view --;
+		// 	alert("远端数据库更新失败!")
+		// }
 	}
 
 	/**
@@ -561,16 +576,17 @@
 	 * @return {[type]}        [description]
 	 */
 	function checkplaying(target) {
-		iter_nodes = video_list.children[0].children;
-		for ( let i = 0; i < iter_nodes.length; i++ ) {
-			if ( target == iter_nodes[i] ) {
-				if ( i == 0 ) return true
-				if ( iter_nodes[i-1].children[0].innerHTML == "√" ) {
-					return true
-				}
-				else return false
-			}
-		}
+		return true
+		// iter_nodes = video_list.children[0].children;
+		// for ( let i = 0; i < iter_nodes.length; i++ ) {
+		// 	if ( target == iter_nodes[i] ) {
+		// 		if ( i == 0 ) return true
+		// 		if ( iter_nodes[i-1].children[0].innerHTML == "√" ) {
+		// 			return true
+		// 		}
+		// 		else return false
+		// 	}
+		// }
 	}
 
 	/**
@@ -1227,7 +1243,7 @@ window.fetch_data = fetch_data // 全局绑定
 					main_ele += `<td>${value}</td>`
 				}
 				// 再填充后面的用户状态
-				main_ele += `<td><div><p>视频观看: ${user['state'][0]}/${res['require'][0]}</p><p>说明阅读: ${user['state'][1]}/${res['require'][1]}</p>`
+				main_ele += `<td><div><p>视频观看: ${user['state'][0]}/${res['require'][0]}</p><p>说明阅读: ${Math.ceil(user['state'][1] / 60)}/${res['require'][1]}分钟</p>`
 				if ( user['state'][3] == 0 ) 
 					main_ele += "<p>尚未参加测评</p></div>"
 				else
@@ -1865,7 +1881,7 @@ window.fetch_data = fetch_data // 全局绑定
 		result_context.fillText(`测评仪器: 毛细管电泳仪`, result_canvas.width * 0.05, canvas.height * 0.6)
 		result_context.fillText(`报告时间: ${new Date().toLocaleString()}`, result_canvas.width * 0.05, canvas.height * 0.75)
 		result_context.fillText(`视频观看: ${res['userstate'][0]} / ${res['requirement'][0]}`, result_canvas.width * 0.05, canvas.height * 1.05)
-		result_context.fillText(`说明阅读: ${res['userstate'][1]} / ${res['requirement'][1]}`, result_canvas.width * 0.05, canvas.height * 1.2)
+		result_context.fillText(`说明阅读: ${Math.ceil(res['userstate'][1] / 60)} / ${res['requirement'][1]}`, result_canvas.width * 0.05, canvas.height * 1.2)
 		result_context.fillText(`测评成绩: ${res['userstate'][2]} / ${res['requirement'][2]}`, result_canvas.width * 0.05, canvas.height * 1.35)
 		result_context.font = "45px Arial"
 		result_context.fillText(`测评结果: ${res['userstate'][2] >= res['requirement'][2] ? "通过" : "未通过"}`, result_canvas.width * 0.05, canvas.height * 1.7)
