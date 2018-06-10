@@ -1,5 +1,3 @@
-"use strict";
-
 (function () {
 	var nav_btns = document.getElementsByClassName("nav_btn");
 	var main_area = document.getElementById("main");
@@ -1083,7 +1081,7 @@
 		// for (let i = 0; i < items.length; i ++) {
 		// 	items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
 		// }
-		items[0].innerHTML = "\u5DF2\u89C2\u770B" + res.userstate[0] + ", \u9700\u8981" + res.requirement[0] + "\u4E2A";
+		items[0].innerHTML = "\u5DF2\u89C2\u770B" + res.userstate[0] + "\u4E2A";
 		items[1].innerHTML = "\u5DF2\u9605\u8BFB" + Math.ceil(res.userstate[1] / 60) + "\u5206\u949F";
 		items[2].innerHTML = res.userstate[2] + "\u5206, \u9700\u8981\u5F97\u5230" + res.requirement[2] + "\u5206";
 		if (res.userstate[3] == "0") {

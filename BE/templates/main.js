@@ -1110,7 +1110,7 @@ window.fetch_data = fetch_data // 全局绑定
 		// for (let i = 0; i < items.length; i ++) {
 		// 	items[i].innerHTML = res.userstate[i] + "/" + res.requirement[i]
 		// }
-		items[0].innerHTML = `已观看${res.userstate[0]}, 需要${res.requirement[0]}个`
+		items[0].innerHTML = `已观看${res.userstate[0]}个`
 		items[1].innerHTML = `已阅读${Math.ceil(res.userstate[1] / 60)}分钟`
 		items[2].innerHTML = `${res.userstate[2]}分, 需要得到${res.requirement[2]}分`
 		if (res.userstate[3] == "0") {
