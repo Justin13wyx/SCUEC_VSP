@@ -48,7 +48,13 @@ def get_reminder():
     text = main_connector.get_attr("reminders", "machineid", machine_id, ("text", )).fetchone()[0]
     if not text:
         return pack_response(4, "error", text="数据获取失败")
-    return pack_response(0, "ok", text=text)
+    if 'username' in session:
+        username = session['username']
+        print(username)
+        user_id = main_connector.get_attr("user_info", "username", username, ("id", "isroot", "isactive", "truename", )).fetchone()
+        return pack_response(0, "ok", text=text, login=True, username=username, truename=user_id[-1], root=user_id[1])
+    else:
+        return pack_response(0, "ok", text=text)
 
 
 @app.route(prefix.format("user", "doSignin"), methods=["POST"])
@@ -89,7 +95,7 @@ def register():
         main_connector.remove_attr("secret", "username", user_info['username'])
         main_connector.remove_attr("user_state", "username", user_info['username'])
         main_connector.remove_attr("instruction_record", "username", user_info['username'])
-        return pack_response(-1, "database written failed!{F}")
+        return pack_response(-1, "database written failed!")
 
 
 @app.route(prefix.format("user", "doLogin"), methods=["POST"])
@@ -108,9 +114,9 @@ def login():
     # 获取该用户的密码
     true_secret = main_connector.get_attr("secret", "id", user_id[0], ("secret",)).fetchone()[0]
     if true_secret == secret:  # 密码匹配, 登陆成功
-        # session[username] = 1
+        session["username"] = username
         res = pack_response(0, "ok", username=username, truename=user_id[-1], root=user_id[1])
-        res.set_cookie("uid", value=username, path="/")
+        # res.set_cookie("uid", value=username, path="/")
         return res
     else:
         return pack_response(1, "wrong password")
@@ -118,8 +124,10 @@ def login():
 
 @app.route(prefix.format("user", "doLogout"), methods=["POST"])
 def logout():
-    session.pop(request.form['username'], None)
-    return pack_response(0, "ok")
+    session.pop('username')
+    res = pack_response(0, "ok")
+    # res.set_cookie("session", value="")
+    return res
 
 
 @app.route(prefix.format("user", "delUser"), methods=["POST"])

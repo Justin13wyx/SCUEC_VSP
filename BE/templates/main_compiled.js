@@ -486,6 +486,10 @@
 
 	function fill_reminder(res) {
 		reminder.innerHTML = res['text'];
+		// 如果返回的数据中带有登录信息, 就直接登录
+		if (res['login']) {
+			check_login_state(res);
+		}
 	}
 
 	/**
@@ -884,6 +888,7 @@
 			max_viewtime = 0;
 			selected_pdf = null;
 			logout_btn.blur();
+			nav_btns[0].click();
 		} else {
 			alert("登出失败! 请稍后尝试.");
 			max_view = 0;
@@ -901,7 +906,6 @@
 			data = "username=" + username;
 			fetch_data(true, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/doLogout", check_logout_state, data);
 			toggle_tooltip(0);
-			nav_btns[0].click();
 		}
 		return;
 	}
