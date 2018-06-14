@@ -371,41 +371,6 @@
 		}
 	});
 
-	// 开始阅读的事件绑定
-	read_trigger.addEventListener("click", function (e) {
-		if (selected_pdf) {
-			var pdf_win = window.open("https://dygx.scuec.edu.cn/te/" + selected_pdf);
-			Object.defineProperty(pdf_win, "timer", {
-				value: time_record, // 这个值需要从后台拉取
-				writable: true
-			});
-			Object.defineProperty(pdf_win, "time_handler", {
-				value: 0,
-				writable: true
-			});
-			Object.defineProperty(pdf_win, "starttimer", {
-				value: function value() {
-					pdf_win.time_handler = pdf_win.setInterval(function () {
-						if (pdf_win.timer <= 3600) {
-							pdf_win.timer += 1;
-							// 需要post用户观看时间
-							if (pdf_win.timer % 2 == 0) {
-								fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateInstructionTime", check_ins_update, "username=" + username + "&time=" + pdf_win.timer);
-							}
-						} else {
-							pdf_win.alert("你已经阅读达到2小时, 现在可以进行测试了.");
-						}
-					}, 1000);
-				}
-			});
-			setTimeout(pdf_win.starttimer, 1000);
-			// data = `username=${username}&ins=${selected_pdf}`;
-			// fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateInstructionIndex", check_ins_update, data)
-		} else {
-			alert("你还没有选择阅读材料.");
-		}
-	});
-
 	// 选择文件之后的事件绑定
 	real_upload.onchange = function () {
 		illegal_file = check_files(this.files, admin_state);
@@ -1046,7 +1011,45 @@
 	}
 
 	function record_init(res) {
+		// 开始阅读的事件绑定
+		read_trigger.addEventListener("click", function (e) {
+			if (selected_pdf) {
+				fetch_data(true, "GET", "https://dygx.scuec.edu.cn/te/apiv1/user/fetchInfo?username=" + escape(username), summon_reading, null);
+			} else {
+				alert("你还没有选择阅读材料.");
+			}
+		});
+	}
+
+	function summon_reading(res) {
 		time_record = res.userstate[1];
+		var pdf_win = window.open("https://dygx.scuec.edu.cn/te/" + selected_pdf);
+		Object.defineProperty(pdf_win, "timer", {
+			value: time_record, // 这个值需要从后台拉取
+			writable: true
+		});
+		Object.defineProperty(pdf_win, "time_handler", {
+			value: 0,
+			writable: true
+		});
+		Object.defineProperty(pdf_win, "starttimer", {
+			value: function value() {
+				pdf_win.time_handler = pdf_win.setInterval(function () {
+					if (pdf_win.timer <= 3600) {
+						pdf_win.timer += 1;
+						// 需要post用户观看时间
+						if (pdf_win.timer % 2 == 0) {
+							fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateInstructionTime", check_ins_update, "username=" + username + "&time=" + pdf_win.timer);
+						}
+					} else {
+						pdf_win.alert("你已经阅读达到2小时.");
+					}
+				}, 1000);
+			}
+		});
+		setTimeout(pdf_win.starttimer, 1000);
+		// data = `username=${username}&ins=${selected_pdf}`;
+		// fetch_data(false, "POST", "https://dygx.scuec.edu.cn/te/apiv1/user/updateInstructionIndex", check_ins_update, data)
 	}
 
 	/**
